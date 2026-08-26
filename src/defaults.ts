@@ -1,0 +1,40 @@
+import type { PortalContent, SiteConfig } from "./types";
+
+export const defaultConfig: SiteConfig = {
+  organization: "KFI 한국소방산업기술원",
+  siteTitle: "위험물검사 고객지원",
+  navHome: "홈",
+  navSchedule: "검사시기",
+  navProcedure: "검사절차",
+  navCases: "품질사례",
+  navManual: "E-매뉴얼",
+  navResources: "양식자료",
+  navAdmin: "관리자",
+  heroEyebrow: "검사 준비부터 개선까지",
+  heroTitle: "위험물검사",
+  heroAccent: "안심동행",
+  heroText: "고객의 입장에서 어렵던 검사정보를 시기별로 쉽고 정확하게 안내합니다.",
+  scheduleTitle: "위험물시설 검사시기 안내",
+  scheduleText: "후배 직원의 검사시기 안내 기능을 완성한 뒤 이곳에 연결합니다.",
+  scheduleCardText: "업체별 검사대상 탱크와 검사기한을 안전하게 확인합니다.",
+  procedureTitle: "검사대상·절차 안내",
+  procedureText: "후배 직원의 검사절차 판정 기능을 현재 디자인에 연결할 예정입니다.",
+  procedureCardText: "시설과 공사조건에 맞는 검사종류와 준비절차를 알아봅니다.",
+  casesTitle: "위험물시설 품질관리 사례집",
+  casesText: "보완·부적합 사례를 검색하고 발생원인과 개선방법을 확인합니다.",
+  casesCardText: "자주 발생하는 보완·부적합 사례와 개선방법을 찾아봅니다.",
+  manualTitle: "위험물탱크 E-매뉴얼",
+  manualText: "검사 매뉴얼과 FAQ를 검색하고 필요한 내용을 빠르게 확인합니다.",
+  manualCardText: "검사 매뉴얼과 자주 묻는 질문을 검색합니다.",
+  resourcesTitle: "유용한 양식·자료실",
+  resourcesText: "검사 준비에 필요한 양식과 참고자료를 누구나 내려받을 수 있습니다.",
+  resourcesCardText: "현장에서 바로 쓰는 양식과 체크리스트를 내려받습니다.",
+  footerNotice: "본 서비스는 이해를 돕기 위한 안내자료이며, 최종 적용은 관계 법령과 검사기준을 확인해 주세요.",
+};
+
+export const defaultContent: PortalContent = {
+  config: defaultConfig,
+  cases: [],
+  manuals: [],
+  resources: [],
+};
