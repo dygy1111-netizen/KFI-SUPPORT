@@ -217,18 +217,28 @@ function Header({
 
 function SchedulePage() {
   return (
-    <iframe
-      src={KFI_ON_URL}
-      title="KFI-ON 검사시기 일정확인"
+    <div
       style={{
-        display: "block",
         width: "100%",
-        height: "calc(100vh - 72px)",
-        minHeight: "800px",
-        border: "none",
+        height: "calc(100vh - 120px)",
+        minHeight: "750px",
+        overflow: "hidden",
         backgroundColor: "#ffffff",
       }}
-    />
+    >
+      <iframe
+        src={KFI_ON_URL}
+        title="KFI-ON 검사시기 일정확인"
+        style={{
+          display: "block",
+          width: "100%",
+          height: "calc(100% + 64px)",
+          border: "none",
+          transform: "translateY(-64px)",
+          backgroundColor: "#ffffff",
+        }}
+      />
+    </div>
   );
 }
 
