@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ADMIN_AUTH_EMAIL, ADMIN_LOGIN_ID } from "../config/site";
 import { defaultConfig } from "../defaults";
 import { isSupabaseConfigured, publicAssetUrl, removePublicFile, supabase, uploadPublicFile } from "../lib/supabase";
 import type { CaseItem, ManualItem, PortalContent, ResourceItem, SiteConfig } from "../types";
@@ -52,7 +51,8 @@ export function AdminPanel({ content, reload }: { content: PortalContent; reload
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [login, setLogin] = useState({ id: ADMIN_LOGIN_ID, password: "" });
+  const [login, setLogin] = useState({ email: "", password: "" });
+  const [adminEmail, setAdminEmail] = useState("");
   const [config, setConfig] = useState<SiteConfig>(content.config);
   const [caseDraft, setCaseDraft] = useState(emptyCase);
   const [manualDraft, setManualDraft] = useState(emptyManual);
@@ -71,14 +71,16 @@ export function AdminPanel({ content, reload }: { content: PortalContent; reload
       if (!sessionData.session) { if (active) { setIsAdmin(false); setChecking(false); } return; }
       const { data, error: roleError } = await supabase.rpc("is_admin");
       if (active) {
-        setIsAdmin(Boolean(data) && !roleError);
+        const allowed = Boolean(data) && !roleError;
+        setIsAdmin(allowed);
+        setAdminEmail(allowed ? (sessionData.session.user.email || "") : "");
         setChecking(false);
-        if (data && !roleError) await reload();
+        if (allowed) await reload();
       }
     };
     void check();
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") setIsAdmin(false);
+      if (event === "SIGNED_OUT") { setIsAdmin(false); setAdminEmail(""); }
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [reload]);
@@ -93,30 +95,51 @@ export function AdminPanel({ content, reload }: { content: PortalContent; reload
 
   const submitLogin = async (event: FormEvent) => {
     event.preventDefault();
-    if (login.id.trim() !== ADMIN_LOGIN_ID) { notify("관리자 아이디가 올바르지 않습니다.", true); return; }
-    setBusy(true); notify("");
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email: ADMIN_AUTH_EMAIL, password: login.password });
-    if (loginError) { notify("아이디 또는 비밀번호를 확인해 주세요.", true); setBusy(false); return; }
+
+    const email = login.email.trim().toLowerCase();
+    if (!email) { notify("관리자 이메일을 입력해 주세요.", true); return; }
+
+    setBusy(true);
+    notify("");
+
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password: login.password,
+    });
+
+    if (loginError) {
+      notify("이메일 또는 비밀번호를 확인해 주세요.", true);
+      setBusy(false);
+      return;
+    }
+
     const { data, error: roleError } = await supabase.rpc("is_admin");
+
     if (!data || roleError) {
       await supabase.auth.signOut();
-      notify("로그인은 됐지만 관리자 권한이 등록되지 않았습니다. setup.sql의 관리자 등록 단계를 확인해 주세요.", true);
-      setBusy(false); return;
+      notify("로그인은 됐지만 관리자 권한이 등록되지 않았습니다. admin_users에 해당 사용자의 UID가 등록되어 있는지 확인해 주세요.", true);
+      setBusy(false);
+      return;
     }
-    setIsAdmin(true); setLogin({ id: ADMIN_LOGIN_ID, password: "" }); await reload(); setBusy(false);
+
+    setIsAdmin(true);
+    setAdminEmail(loginData.user.email || email);
+    setLogin({ email: "", password: "" });
+    await reload();
+    setBusy(false);
   };
 
-  const logout = async () => { await supabase.auth.signOut(); setIsAdmin(false); notify(""); };
+  const logout = async () => { await supabase.auth.signOut(); setIsAdmin(false); setAdminEmail(""); notify(""); };
 
   if (!isSupabaseConfigured) return <AdminGate title="Supabase 연결이 필요합니다" text=".env 파일에 프로젝트 URL과 anon key를 입력한 뒤 다시 실행해 주세요." />;
   if (checking) return <AdminGate title="관리자 권한 확인 중" text="잠시만 기다려 주세요." />;
   if (!isAdmin) return (
-    <><PageHero /><section className="content-section compact"><div className="admin-gate"><span>🔐</span><h2>관리자 로그인</h2><p>관리자 아이디는 코드에 고정되어 있고 비밀번호는 Supabase Auth가 안전하게 확인합니다.</p><form className="admin-login-form" onSubmit={submitLogin}><label>관리자 아이디<input autoComplete="username" value={login.id} onChange={(event) => setLogin({ ...login, id: event.target.value })} required /></label><label>비밀번호<input type="password" autoComplete="current-password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} required /></label>{message && <div className="login-error">{message}</div>}<button className="primary-button full" disabled={busy}>{busy ? "확인 중…" : "로그인"}</button></form></div></section></>
+    <><PageHero /><section className="content-section compact"><div className="admin-gate"><span>🔐</span><h2>관리자 로그인</h2><p>Supabase Authentication에 등록되고 <code>admin_users</code>에 권한이 부여된 관리자만 로그인할 수 있습니다.</p><form className="admin-login-form" onSubmit={submitLogin}><label>관리자 이메일<input type="email" autoComplete="username" placeholder="name@example.com" value={login.email} onChange={(event) => setLogin({ ...login, email: event.target.value })} required /></label><label>비밀번호<input type="password" autoComplete="current-password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} required /></label>{message && <div className="login-error">{message}</div>}<button className="primary-button full" disabled={busy}>{busy ? "확인 중…" : "로그인"}</button></form></div></section></>
   );
 
   const tabs: Array<[Tab, string]> = [["basic", "기본문구"], ["cases", "품질사례"], ["manuals", "매뉴얼·FAQ"], ["resources", "양식자료"], ["account", "비밀번호"]];
   return (
-    <><PageHero /><section className="content-section compact"><div className="admin-topline"><div><span className="section-kicker">CONTENT MANAGER</span><h2>사이트 내용 직접 관리</h2><p>저장하면 모든 방문자 화면에 바로 반영됩니다.</p></div><div className="admin-account"><b>{ADMIN_LOGIN_ID}</b><span>관리자 로그인 중</span><button onClick={() => void logout()}>로그아웃</button></div></div><div className="admin-tabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "active" : ""} onClick={() => { setTab(key); notify(""); }}>{label}</button>)}</div>{message && <div className={`admin-message ${error ? "error" : ""}`}>{message}<button onClick={() => notify("")}>×</button></div>}
+    <><PageHero /><section className="content-section compact"><div className="admin-topline"><div><span className="section-kicker">CONTENT MANAGER</span><h2>사이트 내용 직접 관리</h2><p>저장하면 모든 방문자 화면에 바로 반영됩니다.</p></div><div className="admin-account"><b>{adminEmail || "관리자"}</b><span>관리자 로그인 중</span><button onClick={() => void logout()}>로그아웃</button></div></div><div className="admin-tabs">{tabs.map(([key, label]) => <button key={key} className={tab === key ? "active" : ""} onClick={() => { setTab(key); notify(""); }}>{label}</button>)}</div>{message && <div className={`admin-message ${error ? "error" : ""}`}>{message}<button onClick={() => notify("")}>×</button></div>}
       {tab === "basic" && <ConfigEditor config={config} setConfig={setConfig} busy={busy} save={() => void run(async () => { const { error: updateError } = await supabase.from("site_config").update({ config, updated_at: new Date().toISOString() }).eq("id", 1); if (updateError) throw updateError; }, "사이트 문구가 저장되었습니다.")} />}
       {tab === "cases" && <CaseEditor items={content.cases} draft={caseDraft} setDraft={setCaseDraft} files={caseFiles} setFiles={setCaseFiles} busy={busy} save={() => void run(async () => {
         if (!caseDraft.title.trim()) throw new Error("사례 제목을 입력해 주세요.");
@@ -130,7 +153,7 @@ export function AdminPanel({ content, reload }: { content: PortalContent; reload
       }, "품질사례가 저장되었습니다.")} edit={setCaseDraft} remove={(item) => void run(async () => { await Promise.all([removePublicFile(item.before_image_path), removePublicFile(item.after_image_path)]); const { error: removeError } = await supabase.from("cases").delete().eq("id", item.id); if (removeError) throw removeError; }, "품질사례를 삭제했습니다.")} />}
       {tab === "manuals" && <ManualEditor items={content.manuals} draft={manualDraft} setDraft={setManualDraft} busy={busy} save={() => void run(async () => { if (!manualDraft.title.trim()) throw new Error("제목을 입력해 주세요."); const payload = { ...manualDraft, updated_at: new Date().toISOString() }; const query = manualDraft.id ? supabase.from("manuals").update(payload).eq("id", manualDraft.id) : supabase.from("manuals").insert(payload); const { error: saveError } = await query; if (saveError) throw saveError; setManualDraft(emptyManual); }, "매뉴얼·FAQ가 저장되었습니다.")} edit={setManualDraft} remove={(id) => void run(async () => { const { error: removeError } = await supabase.from("manuals").delete().eq("id", id); if (removeError) throw removeError; }, "항목을 삭제했습니다.")} />}
       {tab === "resources" && <ResourceEditor items={content.resources} draft={resourceDraft} setDraft={setResourceDraft} file={resourceFile} setFile={setResourceFile} busy={busy} save={() => void run(async () => { if (!resourceDraft.title.trim()) throw new Error("자료 제목을 입력해 주세요."); let path = resourceDraft.file_path; let name = resourceDraft.file_name; let type = resourceDraft.file_type; let size = resourceDraft.file_size; if (resourceFile) { path = await uploadPublicFile(resourceFile, "resources"); name = resourceFile.name; type = resourceFile.type || "application/octet-stream"; size = resourceFile.size; } if (!path) throw new Error("첨부파일을 선택해 주세요."); const payload = { ...resourceDraft, file_path: path, file_name: name, file_type: type, file_size: size, updated_at: new Date().toISOString() }; const query = resourceDraft.id ? supabase.from("resources").update(payload).eq("id", resourceDraft.id) : supabase.from("resources").insert(payload); const { error: saveError } = await query; if (saveError) throw saveError; setResourceDraft(emptyResource); setResourceFile(null); }, "양식자료가 게시되었습니다.")} edit={setResourceDraft} remove={(item) => void run(async () => { await removePublicFile(item.file_path); const { error: removeError } = await supabase.from("resources").delete().eq("id", item.id); if (removeError) throw removeError; }, "양식자료를 삭제했습니다.")} />}
-      {tab === "account" && <PasswordEditor values={passwords} setValues={setPasswords} busy={busy} save={(event) => { event.preventDefault(); if (passwords.next.length < 8) { notify("새 비밀번호는 8자 이상 입력해 주세요.", true); return; } if (passwords.next !== passwords.confirm) { notify("새 비밀번호 확인이 일치하지 않습니다.", true); return; } void run(async () => { const { error: updateError } = await supabase.auth.updateUser({ password: passwords.next }); if (updateError) throw updateError; setPasswords({ next: "", confirm: "" }); }, "관리자 비밀번호가 변경되었습니다."); }} />}
+      {tab === "account" && <PasswordEditor email={adminEmail} values={passwords} setValues={setPasswords} busy={busy} save={(event) => { event.preventDefault(); if (passwords.next.length < 8) { notify("새 비밀번호는 8자 이상 입력해 주세요.", true); return; } if (passwords.next !== passwords.confirm) { notify("새 비밀번호 확인이 일치하지 않습니다.", true); return; } void run(async () => { const { error: updateError } = await supabase.auth.updateUser({ password: passwords.next }); if (updateError) throw updateError; setPasswords({ next: "", confirm: "" }); }, "관리자 비밀번호가 변경되었습니다."); }} />}
     </section></>
   );
 }
@@ -167,7 +190,7 @@ function FileInput({ label, accept, current, file, setFile }: { label: string; a
 
 function Published({ checked, setChecked }: { checked: boolean; setChecked: (value: boolean) => void }) { return <label className="check-row"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} /> 방문자에게 공개</label>; }
 
-function PasswordEditor({ values, setValues, busy, save }: { values: { next: string; confirm: string }; setValues: (value: { next: string; confirm: string }) => void; busy: boolean; save: (event: FormEvent) => void }) {
+function PasswordEditor({ email, values, setValues, busy, save }: { email: string; values: { next: string; confirm: string }; setValues: (value: { next: string; confirm: string }) => void; busy: boolean; save: (event: FormEvent) => void }) {
   const strength = useMemo(() => values.next.length >= 12 ? "안전" : values.next.length >= 8 ? "사용 가능" : "8자 이상 필요", [values.next]);
-  return <form className="admin-sheet account-sheet" onSubmit={save}><h3>관리자 비밀번호 변경</h3><p className="sheet-intro">아이디 <b>{ADMIN_LOGIN_ID}</b>는 <code>src/config/site.ts</code>에서 변경할 수 있습니다.</p><div className="admin-field-grid"><label className="span-2">새 비밀번호<input type="password" autoComplete="new-password" value={values.next} onChange={(event) => setValues({ ...values, next: event.target.value })} required /><small>상태: {strength}</small></label><label className="span-2">새 비밀번호 확인<input type="password" autoComplete="new-password" value={values.confirm} onChange={(event) => setValues({ ...values, confirm: event.target.value })} required /></label></div><button className="primary-button" disabled={busy}>비밀번호 변경</button></form>;
+  return <form className="admin-sheet account-sheet" onSubmit={save}><h3>관리자 비밀번호 변경</h3><p className="sheet-intro">현재 로그인 계정: <b>{email || "관리자"}</b></p><div className="admin-field-grid"><label className="span-2">새 비밀번호<input type="password" autoComplete="new-password" value={values.next} onChange={(event) => setValues({ ...values, next: event.target.value })} required /><small>상태: {strength}</small></label><label className="span-2">새 비밀번호 확인<input type="password" autoComplete="new-password" value={values.confirm} onChange={(event) => setValues({ ...values, confirm: event.target.value })} required /></label></div><button className="primary-button" disabled={busy}>비밀번호 변경</button></form>;
 }
