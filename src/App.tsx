@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import { AdminPanel } from "./components/AdminPanel";
 import { defaultContent, defaultConfig } from "./defaults";
 import {
@@ -12,6 +13,9 @@ import {
   publicAssetUrl,
   supabase,
 } from "./lib/supabase";
+
+import { ManualPage } from "./features/manual/ManualPage";
+
 import type {
   CaseItem,
   ManualItem,
@@ -20,7 +24,6 @@ import type {
   SiteConfig,
   View,
 } from "./types";
-import { ManualPage } from "./features/manual/ManualPage";
 
 const validViews: View[] = [
   "home",
