@@ -379,7 +379,7 @@ function HomeView({
             <div>
               <span>BEFORE</span>
               <b>미리 준비하고</b>
-              <p>검사대상·서류·기한 확인</p>
+              <p>검사기한·서류 확인</p>
             </div>
 
             <i>→</i>
@@ -387,7 +387,7 @@ function HomeView({
             <div>
               <span>DURING</span>
               <b>쉽게 이해하고</b>
-              <p>절차·방법·현장사항 안내</p>
+              <p>검사절차·방법 안내</p>
             </div>
 
             <i>→</i>
@@ -395,7 +395,7 @@ function HomeView({
             <div>
               <span>AFTER</span>
               <b>함께 개선합니다</b>
-              <p>사례·조치방법·기술지원</p>
+              <p>개선사례·예방대책</p>
             </div>
           </div>
         </div>
