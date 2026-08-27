@@ -37,52 +37,75 @@ export default function App() {
   const [view, setView] = useState<View>("home");
   const [content, setContent] = useState<PortalContent>(defaultContent);
   const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setNotice(
         "Supabase 연결값을 입력하기 전이라 기본 화면을 표시하고 있습니다.",
       );
+      setLoading(false);
       return;
     }
 
-    const [configResult, casesResult, manualsResult, resourcesResult] =
-      await Promise.all([
-        supabase
-          .from("site_config")
-          .select("config")
-          .eq("id", 1)
-          .maybeSingle(),
-        supabase.from("cases").select("*").order("id", { ascending: false }),
-        supabase.from("manuals").select("*").order("id", { ascending: true }),
-        supabase
-          .from("resources")
-          .select("*")
-          .order("id", { ascending: false }),
-      ]);
+    try {
+      const [configResult, casesResult, manualsResult, resourcesResult] =
+        await Promise.all([
+          supabase
+            .from("site_config")
+            .select("config")
+            .eq("id", 1)
+            .maybeSingle(),
 
-    const error =
-      configResult.error ||
-      casesResult.error ||
-      manualsResult.error ||
-      resourcesResult.error;
+          supabase
+            .from("cases")
+            .select("*")
+            .order("id", { ascending: false }),
 
-    if (error) {
-      setNotice(`Supabase 내용을 불러오지 못했습니다: ${error.message}`);
-      return;
+          supabase
+            .from("manuals")
+            .select("*")
+            .order("id", { ascending: true }),
+
+          supabase
+            .from("resources")
+            .select("*")
+            .order("id", { ascending: false }),
+        ]);
+
+      const error =
+        configResult.error ||
+        casesResult.error ||
+        manualsResult.error ||
+        resourcesResult.error;
+
+      if (error) {
+        setNotice(`Supabase 내용을 불러오지 못했습니다: ${error.message}`);
+        return;
+      }
+
+      setContent({
+        config: {
+          ...defaultConfig,
+          ...((configResult.data?.config || {}) as Partial<SiteConfig>),
+        },
+
+        cases: (casesResult.data || []) as CaseItem[],
+        manuals: (manualsResult.data || []) as ManualItem[],
+        resources: (resourcesResult.data || []) as ResourceItem[],
+      });
+
+      setNotice("");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "알 수 없는 오류가 발생했습니다.";
+
+      setNotice(`Supabase 내용을 불러오지 못했습니다: ${message}`);
+    } finally {
+      setLoading(false);
     }
-
-    setContent({
-      config: {
-        ...defaultConfig,
-        ...((configResult.data?.config || {}) as Partial<SiteConfig>),
-      },
-      cases: (casesResult.data || []) as CaseItem[],
-      manuals: (manualsResult.data || []) as ManualItem[],
-      resources: (resourcesResult.data || []) as ResourceItem[],
-    });
-
-    setNotice("");
   }, []);
 
   useEffect(() => {
@@ -90,10 +113,12 @@ export default function App() {
 
     const syncView = () => {
       const next = window.location.hash.replace("#", "") as View;
+
       setView(validViews.includes(next) ? next : "home");
     };
 
     syncView();
+
     window.addEventListener("hashchange", syncView);
 
     return () => window.removeEventListener("hashchange", syncView);
@@ -101,9 +126,18 @@ export default function App() {
 
   const move = (next: View) => {
     window.location.hash = next;
+
     setView(next);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
+
+  if (loading) {
+    return <div className="site-shell" />;
+  }
 
   const config = content.config;
 
@@ -147,6 +181,7 @@ export default function App() {
             <strong>{config.organization}</strong>
             <span>{config.siteTitle}</span>
           </div>
+
           <p>{config.footerNotice}</p>
         </footer>
       )}
@@ -186,6 +221,7 @@ function Header({
             alt="KFI"
             className="brand-symbol"
           />
+
           <span className="brand-name">한국소방산업기술원</span>
         </button>
 
@@ -257,7 +293,9 @@ function PageHero({
     <section className="page-hero">
       <div className="hero-inner">
         <span className="eyebrow">{eyebrow}</span>
+
         <h1>{title}</h1>
+
         <p>{text}</p>
       </div>
     </section>
@@ -367,6 +405,7 @@ function HomeView({
         <div className="section-heading">
           <div>
             <span className="section-kicker">QUICK SERVICE</span>
+
             <h2>어떤 도움이 필요하신가요?</h2>
           </div>
 
@@ -381,9 +420,13 @@ function HomeView({
               onClick={() => move(card.key)}
             >
               <span className="service-step">{card.step}</span>
+
               <span className="service-icon">{card.no}</span>
+
               <h3>{card.title}</h3>
+
               <p>{card.text}</p>
+
               <b>바로가기 →</b>
             </button>
           ))}
@@ -412,6 +455,7 @@ function PlaceholderPage({
 
           <div>
             <span className="section-kicker">MODULE READY</span>
+
             <h2>검사절차 기능 연결 자리</h2>
 
             <p>
@@ -421,9 +465,13 @@ function PlaceholderPage({
 
             <div className="module-flow">
               <span>기존 코드</span>
+
               <i>→</i>
+
               <span>입력·판정 로직</span>
+
               <i>→</i>
+
               <span>현재 디자인 적용</span>
             </div>
           </div>
@@ -498,13 +546,17 @@ function CasesView({
                   )}
 
                   <span>{item.category}</span>
+
                   <b>{item.status}</b>
                 </div>
 
                 <div className="case-copy">
                   <span>CASE {String(item.id).padStart(2, "0")}</span>
+
                   <h3>{item.title}</h3>
+
                   <p>{item.summary}</p>
+
                   <b>자세히 보기 →</b>
                 </div>
               </button>
@@ -525,6 +577,7 @@ function CasesView({
           </span>
 
           <h2>{selected.title}</h2>
+
           <p className="modal-lead">{selected.summary}</p>
 
           {(selected.before_image_path || selected.after_image_path) && (
@@ -535,6 +588,7 @@ function CasesView({
                     src={publicAssetUrl(selected.before_image_path)}
                     alt="개선 전"
                   />
+
                   <figcaption>개선 전</figcaption>
                 </figure>
               )}
@@ -545,6 +599,7 @@ function CasesView({
                     src={publicAssetUrl(selected.after_image_path)}
                     alt="개선 후"
                   />
+
                   <figcaption>개선 후</figcaption>
                 </figure>
               )}
@@ -605,6 +660,7 @@ function ManualView({
 
             <div>
               <b>매뉴얼 시작하기</b>
+
               <p>검사 단계별 업무안내</p>
             </div>
           </button>
@@ -620,6 +676,7 @@ function ManualView({
 
             <div>
               <b>자주 묻는 질문</b>
+
               <p>고객 문의 빠른 확인</p>
             </div>
           </button>
@@ -644,6 +701,7 @@ function ManualView({
                 key={item.id}
               >
                 <span>{item.category}</span>
+
                 {item.title}
               </button>
             ))}
@@ -653,7 +711,9 @@ function ManualView({
             {selected ? (
               <>
                 <span className="result-label">{selected.category}</span>
+
                 <h2>{selected.title}</h2>
+
                 <p className="manual-summary">{selected.summary}</p>
 
                 <div className="manual-body">
@@ -728,8 +788,11 @@ function ResourcesView({
 
                 <div>
                   <span>{item.category}</span>
+
                   <h3>{item.title}</h3>
+
                   <p>{item.description}</p>
+
                   <small>
                     {item.file_name} · {formatSize(item.file_size)}
                   </small>
@@ -836,14 +899,18 @@ function Empty({
   return (
     <div className="empty-state">
       <span>⌕</span>
+
       <b>{title}</b>
+
       <p>{text}</p>
     </div>
   );
 }
 
 function formatSize(size: number) {
-  if (size < 1024) return `${size} B`;
+  if (size < 1024) {
+    return `${size} B`;
+  }
 
   if (size < 1024 * 1024) {
     return `${Math.round(size / 1024)} KB`;
