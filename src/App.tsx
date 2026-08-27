@@ -181,16 +181,9 @@ function Header({
           onClick={() => move("home")}
           aria-label="홈으로 이동"
         >
-          <span className="brand-logo-wrap">
-            <img
-              src={`${import.meta.env.BASE_URL}images/kfi-logo.jpg`}
-              alt="한국소방산업기술원 KFI"
-              className="brand-logo"
-            />
-          </span>
-
-          <span className="brand-service-title">
-            {config.siteTitle}
+          <span className="brand-mark">K</span>
+          <span>
+            <b>KFI</b> {config.siteTitle}
           </span>
         </button>
 

@@ -23,10 +23,9 @@ a { color: inherit; }
 .site-shell { min-height: 100vh; }
 
 .topbar { min-height: 74px; background: var(--navy); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 max(28px, calc((100vw - 1240px) / 2)); box-shadow: 0 2px 12px rgb(19 44 103 / 25%); position: sticky; top: 0; z-index: 50; }
-.brand { display: flex; align-items: center; gap: 12px; color: white; background: none; border: 0; padding: 0; font-size: 1.02rem; font-weight: 750; white-space: nowrap; }
-.brand-logo-wrap { height: 50px; width: 212px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; border-radius: 6px; padding: 5px 8px; box-shadow: 0 1px 3px rgb(0 0 0 / 10%); }
-.brand-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
-.brand-service-title { color: #fff; font-weight: 800; font-size: .92rem; letter-spacing: -.01em; }
+.brand { display: flex; align-items: center; gap: 12px; color: white; background: none; border: 0; font-size: 1.02rem; font-weight: 750; white-space: nowrap; }
+.brand b { font-size: 1.22rem; margin-right: 5px; }
+.brand-mark { width: 37px; height: 43px; display: grid; place-items: center; border: 3px solid #ef665e; border-radius: 18px 18px 22px 22px; font-size: .9rem; }
 .main-nav { display: flex; align-self: stretch; }
 .main-nav button { color: #dbe6ff; border: 0; background: transparent; padding: 0 14px; font-weight: 750; font-size: .88rem; position: relative; }
 .main-nav button::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; background: transparent; }
@@ -233,9 +232,9 @@ label small { color: #718097; font-weight: 500; }
   html { font-size: 16px; }
   .topbar { padding: 0 15px; min-height: 68px; }
   .mobile-nav { top: 68px; }
-  .brand { gap: 8px; }
-  .brand-logo-wrap { width: 176px; height: 43px; padding: 4px 6px; }
-  .brand-service-title { display: none; }
+  .brand { font-size: .86rem; }
+  .brand b { font-size: 1.05rem; }
+  .brand-mark { width: 31px; height: 36px; }
   .hero-inner { padding-left: 18px; padding-right: 18px; }
   .home-hero-grid { padding-top: 48px; padding-bottom: 52px; gap: 36px; }
   .home-hero h1 { font-size: 2.55rem; }
