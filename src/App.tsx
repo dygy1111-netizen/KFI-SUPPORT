@@ -20,6 +20,7 @@ import type {
   SiteConfig,
   View,
 } from "./types";
+import { ManualPage } from "./features/manual/ManualPage";
 
 const validViews: View[] = [
   "home",
@@ -164,7 +165,11 @@ export default function App() {
       )}
 
       {view === "manual" && (
-        <ManualView config={config} items={content.manuals} />
+        <ManualPage
+          title={config.manualTitle}
+          text={config.manualText}
+          items={content.manuals}
+        />
       )}
 
       {view === "resources" && (
