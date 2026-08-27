@@ -335,22 +335,6 @@ function HomeView({
             </h1>
 
             <p>{config.heroText}</p>
-
-            <div className="hero-actions">
-              <button
-                className="primary-button"
-                onClick={() => move("cases")}
-              >
-                품질사례 보기
-              </button>
-
-              <button
-                className="secondary-button"
-                onClick={() => move("resources")}
-              >
-                양식자료 받기
-              </button>
-            </div>
           </div>
 
           <div className="journey-card">
