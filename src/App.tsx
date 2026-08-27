@@ -170,43 +170,20 @@ function Header({
     ["cases", config.navCases],
     ["manual", config.navManual],
     ["resources", config.navResources],
+    ["admin", config.navAdmin],
   ];
 
   return (
     <>
-      <div className="institution-bar">
-        <div className="institution-bar-inner">
-          <span>한국소방산업기술원 위험물검사 고객지원 서비스</span>
-          <div>
-            <a
-              href="https://kfi.or.kr/portal/main/main.do"
-              target="_blank"
-              rel="noreferrer"
-            >
-              KFI 홈페이지 ↗
-            </a>
-            <button onClick={() => move("admin")}>관리자</button>
-          </div>
-        </div>
-      </div>
-
       <header className="topbar">
         <button
           className="brand"
           onClick={() => move("home")}
           aria-label="홈으로 이동"
         >
-          <span className="brand-mark" aria-hidden="true">
-            <i />
-            <i />
-          </span>
-
-          <span className="brand-copy">
-            <strong>KFI</strong>
-            <span>
-              <b>한국소방산업기술원</b>
-              <small>{config.siteTitle}</small>
-            </span>
+          <span className="brand-mark">K</span>
+          <span>
+            <b>KFI</b> {config.siteTitle}
           </span>
         </button>
 
@@ -233,12 +210,6 @@ function Header({
             {label}
           </button>
         ))}
-        <button
-          className={active === "admin" ? "active" : ""}
-          onClick={() => move("admin")}
-        >
-          관리자
-        </button>
       </nav>
     </>
   );
@@ -312,7 +283,7 @@ function HomeView({
       no: "01",
       title: config.scheduleTitle,
       text: config.scheduleCardText,
-      tone: "green",
+      tone: "blue",
     },
     {
       key: "procedure",
