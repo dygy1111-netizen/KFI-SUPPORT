@@ -181,10 +181,12 @@ function Header({
           onClick={() => move("home")}
           aria-label="홈으로 이동"
         >
-          <span className="brand-mark">K</span>
-          <span>
-            <b>KFI</b> {config.siteTitle}
-          </span>
+          <img
+            src={`${import.meta.env.BASE_URL}images/kfi-symbol.png`}
+            alt="KFI"
+            className="brand-symbol"
+          />
+          <span className="brand-name">한국소방산업기술원</span>
         </button>
 
         <nav className="main-nav" aria-label="주요 메뉴">
