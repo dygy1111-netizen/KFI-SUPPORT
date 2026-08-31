@@ -689,7 +689,6 @@ export function ManualPage({
         <div className="hero-inner">
           <span className="eyebrow">
           <h1>{title}</h1>
-
           <p>{text}</p>
         </div>
       </section>
