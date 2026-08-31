@@ -688,9 +688,6 @@ export function ManualPage({
       <section className="page-hero">
         <div className="hero-inner">
           <span className="eyebrow">
-            전 과정
-          </span>
-
           <h1>{title}</h1>
 
           <p>{text}</p>
