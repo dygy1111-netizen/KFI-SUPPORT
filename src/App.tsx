@@ -447,7 +447,6 @@ function HomeView({
               key={card.key}
               onClick={() => move(card.key)}
             >
-              <span className="service-step">{card.step}</span>
 
               <span className="service-icon">{card.no}</span>
 
