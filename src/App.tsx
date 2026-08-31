@@ -37,6 +37,9 @@ const validViews: View[] = [
 
 const KFI_ON_URL = "https://dygy1111-netizen.github.io/KFI-ON/";
 
+const OPEN_INSPECTION_URL =
+  "https://ee2478-lab.github.io/open-inspection/";
+
 export default function App() {
   const [view, setView] = useState<View>("home");
   const [content, setContent] = useState<PortalContent>(defaultContent);
@@ -155,13 +158,7 @@ export default function App() {
 
       {view === "schedule" && <SchedulePage />}
 
-      {view === "procedure" && (
-        <PlaceholderPage
-          eyebrow="검사 전"
-          title={config.procedureTitle}
-          text={config.procedureText}
-        />
-      )}
+      {view === "procedure" && <ProcedurePage />}
 
       {view === "cases" && (
         <CasesView config={config} items={content.cases} />
@@ -183,7 +180,7 @@ export default function App() {
         <AdminPanel content={content} reload={reload} />
       )}
 
-      {view !== "schedule" && (
+      {view !== "schedule" && view !== "procedure" && (
         <footer className="footer">
           <div>
             <strong>{config.organization}</strong>
@@ -281,6 +278,32 @@ function SchedulePage() {
           height: "calc(100% + 64px)",
           border: "none",
           transform: "translateY(-64px)",
+          backgroundColor: "#ffffff",
+        }}
+      />
+    </div>
+  );
+}
+
+function ProcedurePage() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "calc(100vh - 74px)",
+        minHeight: "750px",
+        overflow: "hidden",
+        backgroundColor: "#ffffff",
+      }}
+    >
+      <iframe
+        src={OPEN_INSPECTION_URL}
+        title="검사절차 안내"
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          border: "none",
           backgroundColor: "#ffffff",
         }}
       />
@@ -438,51 +461,6 @@ function HomeView({
               <b>바로가기 →</b>
             </button>
           ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function PlaceholderPage({
-  eyebrow,
-  title,
-  text,
-}: {
-  eyebrow: string;
-  title: string;
-  text: string;
-}) {
-  return (
-    <>
-      <PageHero eyebrow={eyebrow} title={title} text={text} />
-
-      <section className="content-section compact">
-        <div className="module-placeholder">
-          <span className="module-number">02</span>
-
-          <div>
-            <span className="section-kicker">MODULE READY</span>
-
-            <h2>검사절차 기능 연결 자리</h2>
-
-            <p>
-              검사절차 판정 코드가 완성되면 현재 디자인을 유지한 채
-              입력·판정 로직을 연결합니다.
-            </p>
-
-            <div className="module-flow">
-              <span>기존 코드</span>
-
-              <i>→</i>
-
-              <span>입력·판정 로직</span>
-
-              <i>→</i>
-
-              <span>현재 디자인 적용</span>
-            </div>
-          </div>
         </div>
       </section>
     </>
