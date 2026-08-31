@@ -350,16 +350,6 @@ a {
   box-shadow: 0 13px 28px rgb(24 39 75 / 10%);
 }
 
-.service-step {
-  display: inline-block;
-  border-radius: 18px;
-  padding: 4px 9px;
-  background: #edf4ff;
-  color: #2865ca;
-  font-size: .72rem;
-  font-weight: 850;
-}
-
 .service-icon {
   display: block;
   margin: 20px 0 14px;
