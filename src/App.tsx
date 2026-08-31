@@ -490,7 +490,7 @@ function CasesView({
   return (
     <>
       <PageHero
-        eyebrow="검사 후"
+        eyebrow=""
         title={config.casesTitle}
         text={config.casesText}
       />
@@ -624,7 +624,7 @@ function ManualView({
   return (
     <>
       <PageHero
-        eyebrow="전 과정"
+        eyebrow=""
         title={config.manualTitle}
         text={config.manualText}
       />
@@ -745,7 +745,7 @@ function ResourcesView({
   return (
     <>
       <PageHero
-        eyebrow="자료 활용"
+        eyebrow=""
         title={config.resourcesTitle}
         text={config.resourcesText}
       />
