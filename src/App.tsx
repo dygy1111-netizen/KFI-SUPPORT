@@ -286,6 +286,8 @@ function SchedulePage() {
 }
 
 function ProcedurePage() {
+  const PROCEDURE_HEADER_CROP = 98;
+
   return (
     <div
       style={{
@@ -302,8 +304,9 @@ function ProcedurePage() {
         style={{
           display: "block",
           width: "100%",
-          height: "100%",
+          height: `calc(100% + ${PROCEDURE_HEADER_CROP}px)`,
           border: "none",
+          transform: `translateY(-${PROCEDURE_HEADER_CROP}px)`,
           backgroundColor: "#ffffff",
         }}
       />
