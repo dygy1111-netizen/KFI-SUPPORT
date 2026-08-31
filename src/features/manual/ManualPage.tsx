@@ -70,11 +70,6 @@ function resolveMarkdownUrl(src?: string) {
   return src;
 }
 
-/**
- * Markdown 안의 간단한 인라인 문법 처리
- * **굵게**
- * [링크](주소)
- */
 function renderInlineMarkdown(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
 
@@ -138,10 +133,6 @@ function renderInlineMarkdown(text: string): ReactNode[] {
   return parts;
 }
 
-/**
- * 외부 Markdown 패키지를 사용하지 않고
- * kfi_manual의 Markdown을 간단히 JSX로 변환
- */
 function SimpleMarkdown({
   content,
 }: {
@@ -162,10 +153,6 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * Markdown 이미지
-     * ![설명](주소)
-     */
     const imageMatch = trimmed.match(
       /^!\[([^\]]*)\]\(([^)]+)\)$/,
     );
@@ -189,9 +176,6 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 제목
-     */
     if (trimmed.startsWith("#### ")) {
       elements.push(
         <h4 key={`h4-${index}`}>
@@ -236,9 +220,6 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 인용문
-     */
     if (trimmed.startsWith("> ")) {
       elements.push(
         <blockquote key={`quote-${index}`}>
@@ -250,9 +231,6 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 표
-     */
     if (
       trimmed.startsWith("|") &&
       trimmed.endsWith("|")
@@ -323,12 +301,7 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 순서 없는 목록
-     */
-    if (
-      /^[-*]\s+/.test(trimmed)
-    ) {
+    if (/^[-*]\s+/.test(trimmed)) {
       const listItems: string[] = [];
 
       while (
@@ -355,13 +328,7 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 숫자 목록
-     * 1. / 1) / 1).
-     */
-    if (
-      /^\d+[.)]\.?\s+/.test(trimmed)
-    ) {
+    if (/^\d+[.)]\.?\s+/.test(trimmed)) {
       const listItems: string[] = [];
 
       while (
@@ -390,9 +357,6 @@ function SimpleMarkdown({
       continue;
     }
 
-    /*
-     * 일반 문단
-     */
     elements.push(
       <p key={`p-${index}`}>
         {renderInlineMarkdown(trimmed)}
@@ -537,8 +501,8 @@ export function ManualPage({
           setFaqs(data);
         }
       } catch {
-        // FAQ 오류가 나더라도
-        // E-매뉴얼 본문은 정상 사용
+        // FAQ 로딩 실패는
+        // E-매뉴얼 본문 사용을 막지 않음
       }
     }
 
@@ -687,8 +651,8 @@ export function ManualPage({
     <>
       <section className="page-hero">
         <div className="hero-inner">
-          <span className="eyebrow">
           <h1>{title}</h1>
+
           <p>{text}</p>
         </div>
       </section>
@@ -1008,19 +972,15 @@ export function ManualPage({
                     !selected && (
                       <div className="emanual-home">
                         <h2>
-                          위험물탱크
-                          E-매뉴얼
+                          위험물탱크 E-매뉴얼
                         </h2>
 
                         <p className="emanual-lead">
                           위험물탱크의
-                          위치·구조·설비
-                          기준부터
-                          안전성능검사,
-                          정기검사,
-                          부록까지 한
-                          화면에서 확인할
-                          수 있습니다.
+                          위치·구조·설비 기준부터
+                          안전성능검사, 정기검사,
+                          부록까지 한 화면에서
+                          확인할 수 있습니다.
                         </p>
 
                         <div className="emanual-home-grid">
