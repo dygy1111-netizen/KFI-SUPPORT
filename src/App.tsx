@@ -345,53 +345,47 @@ function HomeView({
 }) {
   const cards: Array<{
     key: View;
-    step: string;
     no: string;
     title: string;
     text: string;
     tone: string;
-  }> = [
-    {
-      key: "schedule",
-      step: "검사 전",
-      no: "01",
-      title: config.scheduleTitle,
-      text: config.scheduleCardText,
-      tone: "blue",
-    },
-    {
-      key: "procedure",
-      step: "검사 전",
-      no: "02",
-      title: config.procedureTitle,
-      text: config.procedureCardText,
-      tone: "indigo",
-    },
-    {
-      key: "cases",
-      step: "검사 후",
-      no: "03",
-      title: config.casesTitle,
-      text: config.casesCardText,
-      tone: "orange",
-    },
-    {
-      key: "manual",
-      step: "전 과정",
-      no: "04",
-      title: config.manualTitle,
-      text: config.manualCardText,
-      tone: "teal",
-    },
-    {
-      key: "resources",
-      step: "자료 활용",
-      no: "05",
-      title: config.resourcesTitle,
-      text: config.resourcesCardText,
-      tone: "slate",
-    },
-  ];
+}> = [
+  {
+    key: "schedule",
+    no: "01",
+    title: config.scheduleTitle,
+    text: config.scheduleCardText,
+    tone: "blue",
+  },
+  {
+    key: "procedure",
+    no: "02",
+    title: config.procedureTitle,
+    text: config.procedureCardText,
+    tone: "indigo",
+  },
+  {
+    key: "cases",
+    no: "03",
+    title: config.casesTitle,
+    text: config.casesCardText,
+    tone: "orange",
+  },
+  {
+    key: "manual",
+    no: "04",
+    title: config.manualTitle,
+    text: config.manualCardText,
+    tone: "teal",
+  },
+  {
+    key: "resources",
+    no: "05",
+    title: config.resourcesTitle,
+    text: config.resourcesCardText,
+    tone: "slate",
+  },
+];
 
   return (
     <>
@@ -453,6 +447,7 @@ function HomeView({
               key={card.key}
               onClick={() => move(card.key)}
             >
+              <span className="service-step">{card.step}</span>
 
               <span className="service-icon">{card.no}</span>
 
