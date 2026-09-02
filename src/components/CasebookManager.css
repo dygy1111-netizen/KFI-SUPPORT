@@ -40,12 +40,12 @@
 
 .cb-page-state {
   padding: 8px 11px;
-  font-size: .76rem;
+  font-size: 0.76rem;
 }
 
 .cb-fit {
   padding: 2px 7px;
-  font-size: .66rem;
+  font-size: 0.66rem;
 }
 
 .cb-page-state.ok,
@@ -71,7 +71,7 @@
 
 .cb-editor-grid {
   display: grid;
-  grid-template-columns: minmax(390px, .82fr) minmax(620px, 1.18fr);
+  grid-template-columns: minmax(390px, 0.82fr) minmax(620px, 1.18fr);
   gap: 18px;
   align-items: start;
 }
@@ -100,16 +100,17 @@
 
 .cb-field-head b {
   color: #43516a;
-  font-size: .82rem;
+  font-size: 0.86rem;
 }
 
 .cb-field textarea {
   width: 100%;
   border: 1px solid #cbd6e5;
   border-radius: 7px;
-  padding: 9px 10px;
-  line-height: 1.58;
+  padding: 10px 11px;
+  line-height: 1.62;
   resize: vertical;
+  font-size: 0.9rem;
 }
 
 .cb-photo-input-grid {
@@ -136,7 +137,7 @@
   display: grid;
   place-items: center;
   color: #3a70c7;
-  font-size: .8rem;
+  font-size: 0.82rem;
   font-weight: 850;
 }
 
@@ -157,7 +158,7 @@
   display: block;
   margin-top: 5px;
   color: #77859a;
-  font-size: .7rem;
+  font-size: 0.72rem;
 }
 
 .cb-remove-photo {
@@ -165,7 +166,7 @@
   background: transparent;
   color: #a54b42;
   padding: 3px 0;
-  font-size: .7rem;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
@@ -180,7 +181,7 @@
   gap: 10px;
   margin-bottom: 7px;
   color: #607087;
-  font-size: .75rem;
+  font-size: 0.78rem;
 }
 
 .cb-preview-head b {
@@ -197,27 +198,32 @@
   box-shadow: 0 12px 32px rgb(23 45 84 / 12%);
   padding: 42px 42px 28px;
   color: #1d2737;
-  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+  font-family:
+    "Noto Sans KR",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    Arial,
+    sans-serif;
 }
 
 .cb-case-head {
-  margin-bottom: 15px;
+  margin-bottom: 17px;
 }
 
 .cb-case-head > span {
   display: block;
   color: #255eb9;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 850;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 
 .cb-case-head h1 {
   margin: 0;
   color: #172337;
-  font-size: 21px;
-  line-height: 1.35;
-  letter-spacing: -.035em;
+  font-size: 25px;
+  line-height: 1.4;
+  letter-spacing: -0.035em;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -239,30 +245,30 @@
 }
 
 .cb-table-label {
-  min-height: 66px;
+  min-height: 70px;
   background: #f2f5f8;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
-  padding: 10px 7px;
+  padding: 11px 7px;
   color: #23354e;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
   font-weight: 850;
 }
 
 .cb-table-content {
   min-width: 0;
-  padding: 12px 14px;
-  font-size: 10.2px;
-  line-height: 1.58;
+  padding: 13px 15px;
+  font-size: 12.5px;
+  line-height: 1.65;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
 
 .cb-table-content p {
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -287,7 +293,7 @@
 
 .cb-photo-area {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .cb-preview-photos {
@@ -303,7 +309,7 @@
 .cb-preview-photos img,
 .cb-photo-placeholder {
   width: 100%;
-  height: 155px;
+  height: 160px;
   border: 1px solid #d8dee8;
   background: #f5f7fa;
 }
@@ -316,22 +322,30 @@
   display: grid;
   place-items: center;
   color: #9ba6b7;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .cb-photo-copy {
   text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
 
+.cb-photo-copy p {
+  margin: 0;
+}
+
 .cb-photo-copy small {
   display: block;
-  margin-top: 4px;
+  margin-top: 5px;
   color: #59677b;
-  font-size: 9px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .cb-page-footer {
@@ -339,9 +353,9 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 18px;
-  padding-top: 8px;
+  padding-top: 9px;
   border-top: 1px solid #d7dde7;
-  font-size: 9px;
+  font-size: 10.5px;
   color: #647084;
 }
 
@@ -375,7 +389,7 @@
   color: #2a63bc;
   border-radius: 15px;
   padding: 2px 8px;
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 850;
 }
 
@@ -420,7 +434,7 @@
 
 .cb-row-copy span {
   color: #2d66c0;
-  font-size: .7rem;
+  font-size: 0.72rem;
   font-weight: 850;
 }
 
@@ -429,7 +443,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #34435a;
-  font-size: .86rem;
+  font-size: 0.9rem;
 }
 
 .cb-row-actions {
@@ -443,7 +457,7 @@
   color: #2963c1;
   border-radius: 6px;
   padding: 6px 8px;
-  font-size: .7rem;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
@@ -491,12 +505,20 @@
   }
 
   .cb-table-label {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .cb-table-content {
-    padding: 9px;
-    font-size: 9px;
+    padding: 10px;
+    font-size: 11px;
+  }
+
+  .cb-case-head > span {
+    font-size: 11px;
+  }
+
+  .cb-case-head h1 {
+    font-size: 21px;
   }
 }
 
@@ -537,5 +559,34 @@
   .cb-print-only .cb-a4-page:last-child {
     page-break-after: auto;
     break-after: auto;
+  }
+
+  .cb-print-only .cb-case-head > span {
+    font-size: 11pt;
+  }
+
+  .cb-print-only .cb-case-head h1 {
+    font-size: 18pt;
+  }
+
+  .cb-print-only .cb-table-label {
+    font-size: 10.5pt;
+  }
+
+  .cb-print-only .cb-table-content {
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+
+  .cb-print-only .cb-photo-copy {
+    font-size: 10pt;
+  }
+
+  .cb-print-only .cb-photo-copy small {
+    font-size: 9pt;
+  }
+
+  .cb-print-only .cb-page-footer {
+    font-size: 9pt;
   }
 }
