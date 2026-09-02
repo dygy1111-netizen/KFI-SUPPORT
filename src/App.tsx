@@ -288,28 +288,305 @@ function SchedulePage() {
 function ProcedurePage() {
   const PROCEDURE_HEADER_CROP = 98;
 
+  const [procedureTab, setProcedureTab] = useState<"guide" | "documents">(
+    "guide",
+  );
+
+  const documentGroups = [
+    {
+      title: "옥외탱크저장소 기술검토",
+      description: "기술검토 신청 시 준비해야 하는 주요 서류입니다.",
+      items: [
+        "기술검토신청서 및 구조설비명세표",
+        "설계도면(기초, 탱크본체, 소화설비 등)",
+        "구조계산서(기초, 탱크본체, 소화설비 등)",
+        "지반조사자료",
+        "공사계획서 및 공정표",
+        "용접부에 관한 설명서",
+      ],
+    },
+    {
+      title: "옥외탱크저장소 안전성능검사",
+      description: "안전성능검사 신청 시 준비해야 하는 주요 서류입니다.",
+      items: [
+        "안전성능검사 신청서 및 구조설비명세표",
+        "설치허가서 사본",
+        "관련 설계도면(기초, 탱크본체)",
+      ],
+    },
+    {
+      title: "옥외탱크저장소 완공검사",
+      description: "완공검사 신청 시 준비해야 하는 주요 서류입니다.",
+      items: [
+        "완공검사 신청서 및 구조설비명세표",
+        "배관에 관한 내압시험, 비파괴시험 등에 합격하였음을 증명하는 서류",
+        "재료의 성능을 증명하는 서류",
+        "위험물탱크 및 방유제 등의 설계도면",
+        "소화설비, 전기설비 등의 계산서 및 설계도면 등",
+      ],
+    },
+    {
+      title: "옥외탱크저장소 중간·정밀 정기검사",
+      description: "정기검사 신청 시 준비해야 하는 주요 서류입니다.",
+      items: [
+        "정기검사신청서 및 구조설비명세표",
+        "위치·구조 및 설비에 관한 도면",
+        "완공검사합격확인증 사본",
+        "밑판, 옆판, 지붕판 및 개구부의 보수이력에 관한 서류",
+        "구조안전점검 성적서(정밀정기검사에 한함)",
+      ],
+    },
+  ];
+
   return (
     <div
       style={{
         width: "100%",
-        height: "calc(100vh - 74px)",
-        minHeight: "750px",
-        overflow: "hidden",
-        backgroundColor: "#ffffff",
+        minHeight: "calc(100vh - 74px)",
+        backgroundColor: "#f4f7fb",
       }}
     >
-      <iframe
-        src={OPEN_INSPECTION_URL}
-        title="검사절차 안내"
+      {/* 검사절차 메뉴 내부 탭 */}
+      <div
         style={{
-          display: "block",
-          width: "100%",
-          height: `calc(100% + ${PROCEDURE_HEADER_CROP}px)`,
-          border: "none",
-          transform: `translateY(-${PROCEDURE_HEADER_CROP}px)`,
           backgroundColor: "#ffffff",
+          borderBottom: "1px solid #dce3ee",
         }}
-      />
+      >
+        <div
+          style={{
+            maxWidth: "1180px",
+            margin: "0 auto",
+            padding: "20px 28px 0",
+            display: "flex",
+            gap: "8px",
+          }}
+        >
+          <button
+            onClick={() => setProcedureTab("guide")}
+            style={{
+              border: "none",
+              borderBottom:
+                procedureTab === "guide"
+                  ? "3px solid #2868df"
+                  : "3px solid transparent",
+              backgroundColor: "transparent",
+              color:
+                procedureTab === "guide"
+                  ? "#1d57b7"
+                  : "#66758b",
+              padding: "12px 18px",
+              fontSize: "1rem",
+              fontWeight: 850,
+            }}
+          >
+            검사절차 안내
+          </button>
+
+          <button
+            onClick={() => setProcedureTab("documents")}
+            style={{
+              border: "none",
+              borderBottom:
+                procedureTab === "documents"
+                  ? "3px solid #2868df"
+                  : "3px solid transparent",
+              backgroundColor: "transparent",
+              color:
+                procedureTab === "documents"
+                  ? "#1d57b7"
+                  : "#66758b",
+              padding: "12px 18px",
+              fontSize: "1rem",
+              fontWeight: 850,
+            }}
+          >
+            신청·구비서류
+          </button>
+        </div>
+      </div>
+
+      {/* 검사절차 안내 */}
+      {procedureTab === "guide" && (
+        <div
+          style={{
+            width: "100%",
+            height: "calc(100vh - 135px)",
+            minHeight: "750px",
+            overflow: "hidden",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <iframe
+            src={OPEN_INSPECTION_URL}
+            title="검사절차 안내"
+            style={{
+              display: "block",
+              width: "100%",
+              height: `calc(100% + ${PROCEDURE_HEADER_CROP}px)`,
+              border: "none",
+              transform: `translateY(-${PROCEDURE_HEADER_CROP}px)`,
+              backgroundColor: "#ffffff",
+            }}
+          />
+        </div>
+      )}
+
+      {/* 신청·구비서류 */}
+      {procedureTab === "documents" && (
+        <section
+          style={{
+            maxWidth: "1180px",
+            margin: "0 auto",
+            padding: "48px 28px 80px",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: "32px",
+            }}
+          >
+            <h1
+              style={{
+                margin: "0 0 10px",
+                fontSize: "2rem",
+                lineHeight: 1.3,
+                letterSpacing: "-0.035em",
+                color: "#172135",
+              }}
+            >
+              옥외탱크저장소 신청·구비서류
+            </h1>
+
+            <p
+              style={{
+                margin: 0,
+                color: "#637086",
+                fontSize: "1rem",
+                lineHeight: 1.75,
+              }}
+            >
+              검사 종류별 신청 시 준비해야 하는 주요 서류를 확인할 수
+              있습니다.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(430px, 1fr))",
+              gap: "18px",
+            }}
+          >
+            {documentGroups.map((group, index) => (
+              <article
+                key={group.title}
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #d9e1ed",
+                  borderRadius: "14px",
+                  padding: "28px 30px",
+                  boxShadow: "0 7px 24px rgba(24, 39, 75, 0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      flex: "0 0 auto",
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      backgroundColor: "#edf4ff",
+                      color: "#2865ca",
+                      fontSize: "0.85rem",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: "#1b2c47",
+                      fontSize: "1.18rem",
+                      lineHeight: 1.45,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {group.title}
+                  </h2>
+                </div>
+
+                <p
+                  style={{
+                    margin: "0 0 20px 46px",
+                    color: "#7a8799",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  {group.description}
+                </p>
+
+                <ul
+                  style={{
+                    margin: 0,
+                    paddingLeft: "24px",
+                    color: "#43516a",
+                    lineHeight: 1.85,
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {group.items.map((item) => (
+                    <li
+                      key={item}
+                      style={{
+                        marginBottom: "7px",
+                        paddingLeft: "3px",
+                      }}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: "24px",
+              backgroundColor: "#edf4ff",
+              border: "1px solid #c9dcfa",
+              borderRadius: "10px",
+              padding: "17px 20px",
+              color: "#435a7c",
+              fontSize: "0.9rem",
+              lineHeight: 1.7,
+            }}
+          >
+            <b
+              style={{
+                color: "#245fc6",
+              }}
+            >
+              안내
+            </b>
+            <br />
+            실제 신청 시 시설의 구조 및 검사 내용에 따라 추가자료가
+            요구될 수 있습니다. 세부사항은 담당자와 확인해 주세요.
+          </div>
+        </section>
+      )}
     </div>
   );
 }
