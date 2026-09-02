@@ -26,6 +26,8 @@ import type {
   View,
 } from "./types";
 
+import { PublicCasebookView } from "./components/PublicCasebookView";
+
 
 const validViews: View[] = [
   "home",
@@ -224,9 +226,8 @@ export default function App() {
 
 
       {view === "cases" && (
-        <CasesView
+        <PublicCasebookView
           config={config}
-          items={content.cases}
         />
       )}
 
