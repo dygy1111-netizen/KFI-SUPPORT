@@ -3,9 +3,8 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
-
-import { defaultConfig } from "../defaults";
 
 import {
   isSupabaseConfigured,
@@ -16,7 +15,6 @@ import {
 } from "../lib/supabase";
 
 import type {
-  CaseItem,
   ManualItem,
   PortalContent,
   ResourceItem,
@@ -28,28 +26,10 @@ import { CasebookManager } from "./CasebookManager";
 
 type Tab =
   | "basic"
-  | "cases"
   | "casebook"
   | "manuals"
   | "resources"
   | "account";
-
-
-const emptyCase:
-  Omit<CaseItem, "id"> & {
-    id?: number;
-  } = {
-  category: "안전성능검사",
-  title: "",
-  summary: "",
-  cause: "",
-  action: "",
-  standard: "",
-  status: "보완",
-  published: true,
-  before_image_path: null,
-  after_image_path: null,
-};
 
 
 const emptyManual:
@@ -271,6 +251,7 @@ export function AdminPanel({
   reload,
 }: {
   content: PortalContent;
+
   reload: () => Promise<void>;
 }) {
   const [
@@ -324,11 +305,6 @@ export function AdminPanel({
   );
 
   const [
-    caseDraft,
-    setCaseDraft,
-  ] = useState(emptyCase);
-
-  const [
     manualDraft,
     setManualDraft,
   ] = useState(
@@ -341,17 +317,6 @@ export function AdminPanel({
   ] = useState(
     emptyResource,
   );
-
-  const [
-    caseFiles,
-    setCaseFiles,
-  ] = useState<{
-    before: File | null;
-    after: File | null;
-  }>({
-    before: null,
-    after: null,
-  });
 
   const [
     resourceFile,
@@ -688,15 +653,13 @@ export function AdminPanel({
             </h2>
 
             <p>
-              Supabase
-              Authentication에
+              Supabase Authentication에
               등록되고{" "}
               <code>
                 admin_users
               </code>
-              에 권한이
-              부여된 관리자만
-              로그인할 수
+              에 권한이 부여된
+              관리자만 로그인할 수
               있습니다.
             </p>
 
@@ -719,16 +682,12 @@ export function AdminPanel({
                   onChange={(
                     event,
                   ) =>
-                    setLogin(
-                      {
-                        ...login,
+                    setLogin({
+                      ...login,
 
-                        email:
-                          event
-                            .target
-                            .value,
-                      },
-                    )
+                      email:
+                        event.target.value,
+                    })
                   }
                   required
                 />
@@ -746,16 +705,12 @@ export function AdminPanel({
                   onChange={(
                     event,
                   ) =>
-                    setLogin(
-                      {
-                        ...login,
+                    setLogin({
+                      ...login,
 
-                        password:
-                          event
-                            .target
-                            .value,
-                      },
-                    )
+                      password:
+                        event.target.value,
+                    })
                   }
                   required
                 />
@@ -793,11 +748,6 @@ export function AdminPanel({
     [
       "basic",
       "기본문구",
-    ],
-
-    [
-      "cases",
-      "품질사례",
     ],
 
     [
@@ -942,14 +892,12 @@ export function AdminPanel({
                       .from(
                         "site_config",
                       )
-                      .update(
-                        {
-                          config,
+                      .update({
+                        config,
 
-                          updated_at:
-                            new Date().toISOString(),
-                        },
-                      )
+                        updated_at:
+                          new Date().toISOString(),
+                      })
                       .eq(
                         "id",
                         1,
@@ -970,189 +918,6 @@ export function AdminPanel({
         )}
 
 
-        {tab ===
-          "cases" && (
-          <CaseEditor
-            items={
-              content.cases
-            }
-            draft={
-              caseDraft
-            }
-            setDraft={
-              setCaseDraft
-            }
-            files={
-              caseFiles
-            }
-            setFiles={
-              setCaseFiles
-            }
-            busy={
-              busy
-            }
-            save={() =>
-              void run(
-                async () => {
-                  if (
-                    !caseDraft.title.trim()
-                  ) {
-                    throw new Error(
-                      "사례 제목을 입력해 주세요.",
-                    );
-                  }
-
-
-                  let before =
-                    caseDraft.before_image_path;
-
-                  let after =
-                    caseDraft.after_image_path;
-
-
-                  if (
-                    caseFiles.before
-                  ) {
-                    before =
-                      await uploadPublicFile(
-                        caseFiles.before,
-                        "cases",
-                      );
-                  }
-
-
-                  if (
-                    caseFiles.after
-                  ) {
-                    after =
-                      await uploadPublicFile(
-                        caseFiles.after,
-                        "cases",
-                      );
-                  }
-
-
-                  const payload =
-                    {
-                      ...caseDraft,
-
-                      before_image_path:
-                        before,
-
-                      after_image_path:
-                        after,
-
-                      updated_at:
-                        new Date().toISOString(),
-                    };
-
-
-                  const query =
-                    caseDraft.id
-                      ? supabase
-                          .from(
-                            "cases",
-                          )
-                          .update(
-                            payload,
-                          )
-                          .eq(
-                            "id",
-                            caseDraft.id,
-                          )
-                      : supabase
-                          .from(
-                            "cases",
-                          )
-                          .insert(
-                            payload,
-                          );
-
-
-                  const {
-                    error:
-                      saveError,
-                  } =
-                    await query;
-
-
-                  if (
-                    saveError
-                  ) {
-                    throw saveError;
-                  }
-
-
-                  setCaseDraft(
-                    emptyCase,
-                  );
-
-
-                  setCaseFiles(
-                    {
-                      before:
-                        null,
-
-                      after:
-                        null,
-                    },
-                  );
-                },
-
-                "품질사례가 저장되었습니다.",
-              )
-            }
-            edit={
-              setCaseDraft
-            }
-            remove={(
-              item,
-            ) =>
-              void run(
-                async () => {
-                  await Promise.all(
-                    [
-                      removePublicFile(
-                        item.before_image_path,
-                      ),
-
-                      removePublicFile(
-                        item.after_image_path,
-                      ),
-                    ],
-                  );
-
-
-                  const {
-                    error:
-                      removeError,
-                  } =
-                    await supabase
-                      .from(
-                        "cases",
-                      )
-                      .delete()
-                      .eq(
-                        "id",
-                        item.id,
-                      );
-
-
-                  if (
-                    removeError
-                  ) {
-                    throw removeError;
-                  }
-                },
-
-                "품질사례를 삭제했습니다.",
-              )
-            }
-          />
-        )}
-
-
-        {/* 사례집 관리 */}
         {tab ===
           "casebook" && (
           <CasebookManager />
@@ -1186,13 +951,12 @@ export function AdminPanel({
                   }
 
 
-                  const payload =
-                    {
-                      ...manualDraft,
+                  const payload = {
+                    ...manualDraft,
 
-                      updated_at:
-                        new Date().toISOString(),
-                    };
+                    updated_at:
+                      new Date().toISOString(),
+                  };
 
 
                   const query =
@@ -1354,25 +1118,24 @@ export function AdminPanel({
                   }
 
 
-                  const payload =
-                    {
-                      ...resourceDraft,
+                  const payload = {
+                    ...resourceDraft,
 
-                      file_path:
-                        path,
+                    file_path:
+                      path,
 
-                      file_name:
-                        name,
+                    file_name:
+                      name,
 
-                      file_type:
-                        type,
+                    file_type:
+                      type,
 
-                      file_size:
-                        size,
+                    file_size:
+                      size,
 
-                      updated_at:
-                        new Date().toISOString(),
-                    };
+                    updated_at:
+                      new Date().toISOString(),
+                  };
 
 
                   const query =
@@ -1488,9 +1251,7 @@ export function AdminPanel({
 
 
               if (
-                passwords
-                  .next
-                  .length <
+                passwords.next.length <
                 8
               ) {
                 notify(
@@ -1521,12 +1282,10 @@ export function AdminPanel({
                     error:
                       updateError,
                   } =
-                    await supabase.auth.updateUser(
-                      {
-                        password:
-                          passwords.next,
-                      },
-                    );
+                    await supabase.auth.updateUser({
+                      password:
+                        passwords.next,
+                    });
 
 
                   if (
@@ -1536,14 +1295,11 @@ export function AdminPanel({
                   }
 
 
-                  setPasswords(
-                    {
-                      next: "",
+                  setPasswords({
+                    next: "",
 
-                      confirm:
-                        "",
-                    },
-                  );
+                    confirm: "",
+                  });
                 },
 
                 "관리자 비밀번호가 변경되었습니다.",
@@ -1573,7 +1329,7 @@ function PageHero() {
         </h1>
 
         <p>
-          사이트의 제목·문구·사례·매뉴얼·양식자료를 직접 수정합니다.
+          사이트의 제목·문구·사례집·매뉴얼·양식자료를 직접 수정합니다.
         </p>
 
       </div>
@@ -1625,10 +1381,13 @@ function ConfigEditor({
   save,
 }: {
   config: SiteConfig;
+
   setConfig: (
     value: SiteConfig,
   ) => void;
+
   busy: boolean;
+
   save: () => void;
 }) {
   return (
@@ -1671,58 +1430,44 @@ function ConfigEditor({
                     }
                   >
 
-                    {
-                      field.label
-                    }
+                    {field.label}
 
 
                     {field.long ? (
                       <textarea
-                        rows={
-                          3
-                        }
+                        rows={3}
                         value={
                           config[
-                            field
-                              .key
+                            field.key
                           ]
                         }
                         onChange={(
                           event,
                         ) =>
-                          setConfig(
-                            {
-                              ...config,
+                          setConfig({
+                            ...config,
 
-                              [field.key]:
-                                event
-                                  .target
-                                  .value,
-                            },
-                          )
+                            [field.key]:
+                              event.target.value,
+                          })
                         }
                       />
                     ) : (
                       <input
                         value={
                           config[
-                            field
-                              .key
+                            field.key
                           ]
                         }
                         onChange={(
                           event,
                         ) =>
-                          setConfig(
-                            {
-                              ...config,
+                          setConfig({
+                            ...config,
 
-                              [field.key]:
-                                event
-                                  .target
-                                  .value,
-                            },
-                          )
+                            [field.key]:
+                              event.target.value,
+                          })
                         }
                       />
                     )}
@@ -1756,8 +1501,8 @@ function EditorShell({
   list,
 }: {
   title: string;
-  form: React.ReactNode;
-  list: React.ReactNode;
+  form: ReactNode;
+  list: ReactNode;
 }) {
   return (
     <div className="editor-layout">
@@ -1796,12 +1541,15 @@ function Rows<
   remove,
 }: {
   items: T[];
+
   meta: (
     item: T,
   ) => string;
+
   edit: (
     item: T,
   ) => void;
+
   remove: (
     item: T,
   ) => void;
@@ -1840,9 +1588,7 @@ function Rows<
                 </span>
 
                 <b>
-                  {
-                    item.title
-                  }
+                  {item.title}
                 </b>
 
               </div>
@@ -1892,418 +1638,6 @@ function Rows<
 }
 
 
-function CaseEditor({
-  items,
-  draft,
-  setDraft,
-  files,
-  setFiles,
-  busy,
-  save,
-  edit,
-  remove,
-}: {
-  items: CaseItem[];
-  draft: typeof emptyCase;
-  setDraft: (
-    value: typeof emptyCase,
-  ) => void;
-  files: {
-    before: File | null;
-    after: File | null;
-  };
-  setFiles: (
-    value: {
-      before: File | null;
-      after: File | null;
-    },
-  ) => void;
-  busy: boolean;
-  save: () => void;
-  edit: (
-    item: CaseItem,
-  ) => void;
-  remove: (
-    item: CaseItem,
-  ) => void;
-}) {
-  const form = (
-    <form
-      onSubmit={(
-        event,
-      ) => {
-        event.preventDefault();
-
-        save();
-      }}
-    >
-
-      <div className="admin-field-grid">
-
-        <label>
-          검사 구분
-
-          <input
-            required
-            value={
-              draft.category
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  category:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-
-        <label>
-          결과 구분
-
-          <select
-            value={
-              draft.status
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  status:
-                    event
-                      .target
-                      .value as
-                    | "보완"
-                    | "부적합",
-                },
-              )
-            }
-          >
-            <option>
-              보완
-            </option>
-
-            <option>
-              부적합
-            </option>
-          </select>
-        </label>
-
-
-        <label className="span-2">
-          사례 제목
-
-          <input
-            required
-            value={
-              draft.title
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  title:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-
-        <label className="span-2">
-          지적 내용·요약
-
-          <textarea
-            rows={
-              3
-            }
-            value={
-              draft.summary
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  summary:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-
-        <label className="span-2">
-          발생 원인
-
-          <textarea
-            rows={
-              3
-            }
-            value={
-              draft.cause
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  cause:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-
-        <label className="span-2">
-          개선 방법
-
-          <textarea
-            rows={
-              3
-            }
-            value={
-              draft.action
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  action:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-
-        <label className="span-2">
-          관련 기준
-
-          <textarea
-            rows={
-              2
-            }
-            value={
-              draft.standard
-            }
-            onChange={(
-              event,
-            ) =>
-              setDraft(
-                {
-                  ...draft,
-
-                  standard:
-                    event
-                      .target
-                      .value,
-                },
-              )
-            }
-          />
-        </label>
-
-      </div>
-
-
-      <div className="photo-upload-grid">
-
-        <FileInput
-          label="개선 전 사진"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          current={
-            draft.before_image_path
-          }
-          file={
-            files.before
-          }
-          setFile={(
-            file,
-          ) =>
-            setFiles(
-              {
-                ...files,
-
-                before:
-                  file,
-              },
-            )
-          }
-        />
-
-
-        <FileInput
-          label="개선 후 사진"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          current={
-            draft.after_image_path
-          }
-          file={
-            files.after
-          }
-          setFile={(
-            file,
-          ) =>
-            setFiles(
-              {
-                ...files,
-
-                after:
-                  file,
-              },
-            )
-          }
-        />
-
-      </div>
-
-
-      <Published
-        checked={
-          draft.published
-        }
-        setChecked={(
-          published,
-        ) =>
-          setDraft(
-            {
-              ...draft,
-
-              published,
-            },
-          )
-        }
-      />
-
-
-      <div className="form-actions">
-
-        <button
-          className="primary-button"
-          disabled={busy}
-        >
-          {draft.id
-            ? "사례 수정"
-            : "새 사례 등록"}
-        </button>
-
-
-        {draft.id && (
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => {
-              setDraft(
-                emptyCase,
-              );
-
-
-              setFiles(
-                {
-                  before:
-                    null,
-
-                  after:
-                    null,
-                },
-              );
-            }}
-          >
-            취소
-          </button>
-        )}
-
-      </div>
-
-    </form>
-  );
-
-
-  return (
-    <EditorShell
-      title={
-        draft.id
-          ? "품질사례 수정"
-          : "새 품질사례"
-      }
-      form={
-        form
-      }
-      list={
-        <Rows
-          items={
-            items
-          }
-          meta={(
-            item,
-          ) =>
-            `${item.category} · ${item.status}${
-              item.published
-                ? ""
-                : " · 비공개"
-            }`
-          }
-          edit={(
-            item,
-          ) => {
-            edit(item);
-
-
-            setFiles(
-              {
-                before:
-                  null,
-
-                after:
-                  null,
-              },
-            );
-          }}
-          remove={
-            remove
-          }
-        />
-      }
-    />
-  );
-}
-
-
 function ManualEditor({
   items,
   draft,
@@ -2314,15 +1648,21 @@ function ManualEditor({
   remove,
 }: {
   items: ManualItem[];
+
   draft: typeof emptyManual;
+
   setDraft: (
     value: typeof emptyManual,
   ) => void;
+
   busy: boolean;
+
   save: () => void;
+
   edit: (
     item: ManualItem,
   ) => void;
+
   remove: (
     id: number,
   ) => void;
@@ -2350,16 +1690,12 @@ function ManualEditor({
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  category:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                category:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2377,17 +1713,13 @@ function ManualEditor({
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  faq:
-                    event
-                      .target
-                      .value ===
-                    "faq",
-                },
-              )
+                faq:
+                  event.target.value ===
+                  "faq",
+              })
             }
           >
             <option value="manual">
@@ -2412,16 +1744,12 @@ function ManualEditor({
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  title:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                title:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2431,25 +1759,19 @@ function ManualEditor({
           요약
 
           <textarea
-            rows={
-              3
-            }
+            rows={3}
             value={
               draft.summary
             }
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  summary:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                summary:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2459,25 +1781,19 @@ function ManualEditor({
           본문
 
           <textarea
-            rows={
-              12
-            }
+            rows={12}
             value={
               draft.body
             }
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  body:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                body:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2492,13 +1808,11 @@ function ManualEditor({
         setChecked={(
           published,
         ) =>
-          setDraft(
-            {
-              ...draft,
+          setDraft({
+            ...draft,
 
-              published,
-            },
-          )
+            published,
+          })
         }
       />
 
@@ -2542,26 +1856,24 @@ function ManualEditor({
           ? "매뉴얼·FAQ 수정"
           : "새 매뉴얼·FAQ"
       }
-      form={
-        form
-      }
+      form={form}
       list={
         <Rows
-          items={
-            items
-          }
+          items={items}
           meta={(
             item,
           ) =>
-            `${item.faq ? "FAQ" : "매뉴얼"} · ${item.category}${
+            `${
+              item.faq
+                ? "FAQ"
+                : "매뉴얼"
+            } · ${item.category}${
               item.published
                 ? ""
                 : " · 비공개"
             }`
           }
-          edit={
-            edit
-          }
+          edit={edit}
           remove={(
             item,
           ) =>
@@ -2588,19 +1900,27 @@ function ResourceEditor({
   remove,
 }: {
   items: ResourceItem[];
+
   draft: typeof emptyResource;
+
   setDraft: (
     value: typeof emptyResource,
   ) => void;
+
   file: File | null;
+
   setFile: (
     value: File | null,
   ) => void;
+
   busy: boolean;
+
   save: () => void;
+
   edit: (
     item: ResourceItem,
   ) => void;
+
   remove: (
     item: ResourceItem,
   ) => void;
@@ -2628,16 +1948,12 @@ function ResourceEditor({
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  category:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                category:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2654,16 +1970,12 @@ function ResourceEditor({
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  title:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                title:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2673,25 +1985,19 @@ function ResourceEditor({
           자료 설명
 
           <textarea
-            rows={
-              3
-            }
+            rows={3}
             value={
               draft.description
             }
             onChange={(
               event,
             ) =>
-              setDraft(
-                {
-                  ...draft,
+              setDraft({
+                ...draft,
 
-                  description:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                description:
+                  event.target.value,
+              })
             }
           />
         </label>
@@ -2705,9 +2011,7 @@ function ResourceEditor({
         current={
           draft.file_path
         }
-        file={
-          file
-        }
+        file={file}
         setFile={
           setFile
         }
@@ -2721,13 +2025,11 @@ function ResourceEditor({
         setChecked={(
           published,
         ) =>
-          setDraft(
-            {
-              ...draft,
+          setDraft({
+            ...draft,
 
-              published,
-            },
-          )
+            published,
+          })
         }
       />
 
@@ -2753,7 +2055,6 @@ function ResourceEditor({
                 emptyResource,
               );
 
-
               setFile(
                 null,
               );
@@ -2776,14 +2077,10 @@ function ResourceEditor({
           ? "양식자료 수정"
           : "새 양식자료"
       }
-      form={
-        form
-      }
+      form={form}
       list={
         <Rows
-          items={
-            items
-          }
+          items={items}
           meta={(
             item,
           ) =>
@@ -2798,11 +2095,11 @@ function ResourceEditor({
           ) => {
             edit(item);
 
-            setFile(null);
+            setFile(
+              null,
+            );
           }}
-          remove={
-            remove
-          }
+          remove={remove}
         />
       }
     />
@@ -2818,9 +2115,13 @@ function FileInput({
   setFile,
 }: {
   label: string;
+
   accept: string;
+
   current: string | null;
+
   file: File | null;
+
   setFile: (
     value: File | null,
   ) => void;
@@ -2841,9 +2142,7 @@ function FileInput({
 
       {preview ? (
         <img
-          src={
-            preview
-          }
+          src={preview}
           alt="현재 첨부"
         />
       ) : (
@@ -2868,16 +2167,12 @@ function FileInput({
 
       <input
         type="file"
-        accept={
-          accept
-        }
+        accept={accept}
         onChange={(
           event,
         ) =>
           setFile(
-            event
-              .target
-              .files?.[0] ||
+            event.target.files?.[0] ||
               null,
           )
         }
@@ -2893,6 +2188,7 @@ function Published({
   setChecked,
 }: {
   checked: boolean;
+
   setChecked: (
     value: boolean,
   ) => void;
@@ -2902,16 +2198,12 @@ function Published({
 
       <input
         type="checkbox"
-        checked={
-          checked
-        }
+        checked={checked}
         onChange={(
           event,
         ) =>
           setChecked(
-            event
-              .target
-              .checked,
+            event.target.checked,
           )
         }
       />
@@ -2956,8 +2248,7 @@ function PasswordEditor({
         values.next.length >=
         12
           ? "안전"
-          : values.next
-                .length >=
+          : values.next.length >=
               8
             ? "사용 가능"
             : "8자 이상 필요",
@@ -2969,9 +2260,7 @@ function PasswordEditor({
   return (
     <form
       className="admin-sheet account-sheet"
-      onSubmit={
-        save
-      }
+      onSubmit={save}
     >
 
       <h3>
@@ -3003,25 +2292,19 @@ function PasswordEditor({
             onChange={(
               event,
             ) =>
-              setValues(
-                {
-                  ...values,
+              setValues({
+                ...values,
 
-                  next:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                next:
+                  event.target.value,
+              })
             }
             required
           />
 
           <small>
             상태:{" "}
-            {
-              strength
-            }
+            {strength}
           </small>
         </label>
 
@@ -3038,16 +2321,12 @@ function PasswordEditor({
             onChange={(
               event,
             ) =>
-              setValues(
-                {
-                  ...values,
+              setValues({
+                ...values,
 
-                  confirm:
-                    event
-                      .target
-                      .value,
-                },
-              )
+                confirm:
+                  event.target.value,
+              })
             }
             required
           />
