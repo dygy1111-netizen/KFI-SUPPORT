@@ -641,7 +641,129 @@
     font-size: 12px;
   }
 }
+/* =======================================
+   외부 품질사례 상세 확대 / 축소
+   ======================================= */
 
+.public-casebook-toolbar {
+  max-width: 920px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.public-casebook-zoom {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  background: #f4f7fb;
+  border: 1px solid #dce4ef;
+  border-radius: 9px;
+}
+
+.public-casebook-zoom > span {
+  padding: 0 7px;
+  color: #5d6c82;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.public-casebook-zoom button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #53627a;
+  border-radius: 6px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.public-casebook-zoom button:hover {
+  background: #ffffff;
+}
+
+.public-casebook-zoom button.active {
+  color: #ffffff;
+  background: #2f67bc;
+  border-color: #2f67bc;
+}
+
+.public-casebook-zoom-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  overflow: visible;
+  transform-origin: top center;
+  transition:
+    transform 0.18s ease,
+    margin-bottom 0.18s ease;
+}
+
+/* 기본은 모니터에 들어오기 쉽게 약간 축소 */
+.public-casebook-zoom-wrap.zoom-normal {
+  transform: scale(0.78);
+  margin-bottom: -235px;
+}
+
+/* 더 작게 */
+.public-casebook-zoom-wrap.zoom-small {
+  transform: scale(0.66);
+  margin-bottom: -365px;
+}
+
+/* 눈이 불편한 사용자를 위한 크게 보기 */
+.public-casebook-zoom-wrap.zoom-large {
+  transform: scale(1);
+  margin-bottom: 0;
+}
+
+/* 작은 높이의 노트북 */
+@media (max-height: 850px) and (min-width: 721px) {
+  .public-casebook-zoom-wrap.zoom-normal {
+    transform: scale(0.7);
+    margin-bottom: -325px;
+  }
+
+  .public-casebook-zoom-wrap.zoom-small {
+    transform: scale(0.6);
+    margin-bottom: -430px;
+  }
+}
+
+/* 모바일에서는 transform 대신 일반 크기로 표시 */
+@media (max-width: 720px) {
+  .public-casebook-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .public-casebook-zoom {
+    justify-content: center;
+  }
+
+  .public-casebook-zoom-wrap.zoom-small,
+  .public-casebook-zoom-wrap.zoom-normal,
+  .public-casebook-zoom-wrap.zoom-large {
+    transform: none;
+    margin-bottom: 0;
+  }
+
+  .public-casebook-zoom-wrap.zoom-small .cb-a4-page {
+    font-size: 0.9em;
+  }
+
+  .public-casebook-zoom-wrap.zoom-normal .cb-a4-page {
+    font-size: 1em;
+  }
+
+  .public-casebook-zoom-wrap.zoom-large .cb-a4-page {
+    font-size: 1.12em;
+  }
+}
 @media print {
   @page {
     size: A4 portrait;
