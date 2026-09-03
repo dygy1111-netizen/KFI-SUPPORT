@@ -37,6 +37,12 @@ type CasebookCase = {
 };
 
 
+type ZoomLevel =
+  | "small"
+  | "normal"
+  | "large";
+
+
 export function PublicCasebookView({
   config,
 }: {
@@ -72,12 +78,18 @@ export function PublicCasebookView({
     setSelected,
   ] = useState<CasebookCase | null>(null);
 
+  const [
+    zoom,
+    setZoom,
+  ] = useState<ZoomLevel>("normal");
+
 
   useEffect(() => {
     let active = true;
 
     async function load() {
       setLoading(true);
+
       setError("");
 
       const {
@@ -99,8 +111,11 @@ export function PublicCasebookView({
 
       if (loadError) {
         setError(loadError.message);
+
         setItems([]);
+
         setLoading(false);
+
         return;
       }
 
@@ -122,6 +137,7 @@ export function PublicCasebookView({
   const categories = useMemo(
     () => [
       "전체",
+
       ...new Set(
         items.map(
           (item) =>
@@ -202,21 +218,14 @@ export function PublicCasebookView({
             maxWidth: "1180px",
           }}
         >
-          <div
-            style={{
-              marginBottom: "18px",
-              display: "flex",
-              justifyContent:
-                "space-between",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+          <div className="public-casebook-toolbar">
             <button
               type="button"
               className="secondary-button"
               onClick={() => {
                 setSelected(null);
+
+                setZoom("normal");
 
                 window.scrollTo({
                   top: 0,
@@ -228,23 +237,63 @@ export function PublicCasebookView({
             </button>
 
 
-            <span
-              style={{
-                color: "#6c788b",
-                fontSize: "0.86rem",
-              }}
-            >
-              사례{" "}
-              {String(
-                selected.case_no,
-              ).padStart(2, "0")}
-            </span>
+            <div className="public-casebook-zoom">
+              <span>
+                화면 크기
+              </span>
+
+              <button
+                type="button"
+                className={
+                  zoom === "small"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setZoom("small")
+                }
+              >
+                작게
+              </button>
+
+              <button
+                type="button"
+                className={
+                  zoom === "normal"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setZoom("normal")
+                }
+              >
+                기본
+              </button>
+
+              <button
+                type="button"
+                className={
+                  zoom === "large"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setZoom("large")
+                }
+              >
+                크게
+              </button>
+            </div>
           </div>
 
 
-          <PublicCasebookPage
-            item={selected}
-          />
+          <div
+            className={`public-casebook-zoom-wrap zoom-${zoom}`}
+          >
+            <PublicCasebookPage
+              item={selected}
+            />
+          </div>
         </section>
       </>
     );
@@ -368,6 +417,8 @@ export function PublicCasebookView({
                   onClick={() => {
                     setSelected(item);
 
+                    setZoom("normal");
+
                     window.scrollTo({
                       top: 0,
                       behavior:
@@ -457,12 +508,7 @@ function PublicCasebookPage({
     );
 
   return (
-    <article
-      className="cb-a4-page"
-      style={{
-        maxWidth: "850px",
-      }}
-    >
+    <article className="cb-a4-page">
       <header className="cb-case-head">
         <span>
           [사례{" "}
@@ -575,9 +621,7 @@ function PublicCasebookPage({
                 line,
                 index,
               ) => (
-                <p
-                  key={index}
-                >
+                <p key={index}>
                   {line}
                 </p>
               ),
@@ -603,9 +647,7 @@ function PublicCasebookPage({
                 line,
                 index,
               ) => (
-                <p
-                  key={index}
-                >
+                <p key={index}>
                   {line}
                 </p>
               ),
