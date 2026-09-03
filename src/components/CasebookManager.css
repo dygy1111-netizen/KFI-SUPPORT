@@ -145,7 +145,7 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 280px;
+  max-height: 300px;
   object-fit: contain;
   background: #f5f7fa;
 }
@@ -303,30 +303,35 @@
   width: 100%;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 12px;
   align-items: start;
+  justify-items: center;
 }
 
 .cb-preview-photos.two {
   grid-template-columns: 1fr 1fr;
 }
 
+/* 핵심: 사진은 절대 자르지 않음 */
 .cb-preview-photos img {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 420px;
+  max-height: 460px;
   object-fit: contain;
+  object-position: center;
   border: 1px solid #d8dee8;
   background: #f5f7fa;
   border-radius: 4px;
 }
 
+/* 사진 1장 */
 .cb-preview-photos.one img {
   max-width: 100%;
   margin: 0 auto;
 }
 
+/* 사진 2장 */
 .cb-preview-photos.two img {
   max-width: 100%;
   margin: 0 auto;
@@ -334,7 +339,7 @@
 
 .cb-photo-placeholder {
   width: 100%;
-  min-height: 240px;
+  min-height: 250px;
   border: 1px solid #d8dee8;
   background: #f5f7fa;
   border-radius: 4px;
@@ -507,9 +512,9 @@
   font-size: 0.9rem;
 }
 
-/* 외부 품질사례 상세 */
+/* 외부 상세 화면 */
 .content-section .cb-a4-page {
-  max-width: 900px;
+  max-width: 920px;
 }
 
 .content-section .cb-a4-page .cb-case-head > span {
@@ -541,12 +546,18 @@
   font-size: 12px;
 }
 
-/* 외부 상세에서도 사진 비율 유지 */
+/* 외부 상세 사진도 절대 자르지 않음 */
 .content-section .cb-a4-page .cb-preview-photos img {
   width: 100%;
   height: auto;
-  max-height: 520px;
+  max-height: 560px;
   object-fit: contain;
+  object-position: center;
+}
+
+/* 두 사진의 세로 길이가 달라도 각각 원본 비율 유지 */
+.content-section .cb-a4-page .cb-preview-photos.two {
+  align-items: start;
 }
 
 @media (max-width: 1180px) {
@@ -602,12 +613,16 @@
     font-size: 22px;
   }
 
+  /* 모바일은 사진 두 장도 세로로 */
   .cb-preview-photos.two {
     grid-template-columns: 1fr;
   }
 
   .cb-preview-photos img {
-    max-height: 430px;
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
   }
 
   .cb-photo-placeholder {
@@ -689,12 +704,18 @@
     padding: 3mm 3.5mm;
   }
 
-  /* PDF에서도 원본 비율 유지 */
+  /* PDF에서도 절대 자르지 않음 */
   .cb-print-only .cb-preview-photos img {
+    display: block;
     width: 100%;
     height: auto;
-    max-height: 68mm;
+    max-height: 72mm;
     object-fit: contain;
+    object-position: center;
+  }
+
+  .cb-print-only .cb-preview-photos.two {
+    align-items: start;
   }
 
   .cb-print-only .cb-photo-placeholder {
