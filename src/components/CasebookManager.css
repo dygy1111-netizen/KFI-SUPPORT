@@ -128,7 +128,7 @@
 }
 
 .cb-photo-box {
-  height: 180px;
+  min-height: 160px;
   border: 2px dashed #c7d2e2;
   border-radius: 9px;
   background: #f9fbfe;
@@ -142,9 +142,12 @@
 }
 
 .cb-photo-box img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 280px;
+  object-fit: contain;
+  background: #f5f7fa;
 }
 
 .cb-photo-box input {
@@ -297,38 +300,44 @@
 }
 
 .cb-preview-photos {
+  width: 100%;
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+  align-items: start;
 }
 
 .cb-preview-photos.two {
   grid-template-columns: 1fr 1fr;
 }
 
-.cb-preview-photos.one img,
-.cb-preview-photos.one .cb-photo-placeholder {
-  height: 300px;
-}
-
-.cb-preview-photos.two img,
-.cb-preview-photos.two .cb-photo-placeholder {
-  height: 260px;
-}
-
-.cb-preview-photos img,
-.cb-photo-placeholder {
+.cb-preview-photos img {
+  display: block;
   width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
   border: 1px solid #d8dee8;
   background: #f5f7fa;
   border-radius: 4px;
 }
 
-.cb-preview-photos img {
-  object-fit: cover;
+.cb-preview-photos.one img {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.cb-preview-photos.two img {
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .cb-photo-placeholder {
+  width: 100%;
+  min-height: 240px;
+  border: 1px solid #d8dee8;
+  background: #f5f7fa;
+  border-radius: 4px;
   display: grid;
   place-items: center;
   color: #9ba6b7;
@@ -479,7 +488,7 @@
   display: none;
 }
 
-/* 외부 품질사례 카드 글씨 */
+/* 외부 품질사례 카드 */
 .case-card .case-copy h3 {
   font-size: 1.18rem;
   line-height: 1.45;
@@ -498,7 +507,7 @@
   font-size: 0.9rem;
 }
 
-/* 외부 품질사례 상세보기에서는 화면용 글씨를 더 크게 */
+/* 외부 품질사례 상세 */
 .content-section .cb-a4-page {
   max-width: 900px;
 }
@@ -530,6 +539,14 @@
 
 .content-section .cb-a4-page .cb-page-footer {
   font-size: 12px;
+}
+
+/* 외부 상세에서도 사진 비율 유지 */
+.content-section .cb-a4-page .cb-preview-photos img {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
 }
 
 @media (max-width: 1180px) {
@@ -589,11 +606,12 @@
     grid-template-columns: 1fr;
   }
 
-  .cb-preview-photos.one img,
-  .cb-preview-photos.one .cb-photo-placeholder,
-  .cb-preview-photos.two img,
-  .cb-preview-photos.two .cb-photo-placeholder {
-    height: 230px;
+  .cb-preview-photos img {
+    max-height: 430px;
+  }
+
+  .cb-photo-placeholder {
+    min-height: 200px;
   }
 
   .content-section .cb-a4-page .cb-case-head h1 {
@@ -671,14 +689,16 @@
     padding: 3mm 3.5mm;
   }
 
-  .cb-print-only .cb-preview-photos.one img,
-  .cb-print-only .cb-preview-photos.one .cb-photo-placeholder {
-    height: 70mm;
+  /* PDF에서도 원본 비율 유지 */
+  .cb-print-only .cb-preview-photos img {
+    width: 100%;
+    height: auto;
+    max-height: 68mm;
+    object-fit: contain;
   }
 
-  .cb-print-only .cb-preview-photos.two img,
-  .cb-print-only .cb-preview-photos.two .cb-photo-placeholder {
-    height: 60mm;
+  .cb-print-only .cb-photo-placeholder {
+    min-height: 55mm;
   }
 
   .cb-print-only .cb-photo-copy {
