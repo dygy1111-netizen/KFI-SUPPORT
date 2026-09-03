@@ -40,12 +40,12 @@
 
 .cb-page-state {
   padding: 8px 11px;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
 }
 
 .cb-fit {
   padding: 2px 7px;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
 }
 
 .cb-page-state.ok,
@@ -100,7 +100,7 @@
 
 .cb-field-head b {
   color: #43516a;
-  font-size: 0.86rem;
+  font-size: 0.9rem;
 }
 
 .cb-field textarea {
@@ -110,7 +110,7 @@
   padding: 10px 11px;
   line-height: 1.62;
   resize: vertical;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .cb-photo-input-grid {
@@ -128,7 +128,7 @@
 }
 
 .cb-photo-box {
-  height: 145px;
+  height: 180px;
   border: 2px dashed #c7d2e2;
   border-radius: 9px;
   background: #f9fbfe;
@@ -137,7 +137,7 @@
   display: grid;
   place-items: center;
   color: #3a70c7;
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   font-weight: 850;
 }
 
@@ -158,7 +158,7 @@
   display: block;
   margin-top: 5px;
   color: #77859a;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
 }
 
 .cb-remove-photo {
@@ -166,7 +166,7 @@
   background: transparent;
   color: #a54b42;
   padding: 3px 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
@@ -181,7 +181,7 @@
   gap: 10px;
   margin-bottom: 7px;
   color: #607087;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
 }
 
 .cb-preview-head b {
@@ -190,13 +190,13 @@
 
 .cb-a4-page {
   width: 100%;
-  max-width: 760px;
-  min-height: 1075px;
+  max-width: 860px;
+  min-height: 1080px;
   margin: 0 auto;
   background: #fff;
   border: 1px solid #d8e0eb;
   box-shadow: 0 12px 32px rgb(23 45 84 / 12%);
-  padding: 42px 42px 28px;
+  padding: 46px 48px 30px;
   color: #1d2737;
   font-family:
     "Noto Sans KR",
@@ -207,68 +207,68 @@
 }
 
 .cb-case-head {
-  margin-bottom: 17px;
+  margin-bottom: 18px;
 }
 
 .cb-case-head > span {
   display: block;
   color: #255eb9;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 850;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
 
 .cb-case-head h1 {
   margin: 0;
   color: #172337;
-  font-size: 25px;
-  line-height: 1.4;
+  font-size: 28px;
+  line-height: 1.42;
   letter-spacing: -0.035em;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
 
 .cb-table {
-  border-top: 1.25px solid #65758b;
-  border-left: 1.25px solid #65758b;
+  border-top: 1.3px solid #65758b;
+  border-left: 1.3px solid #65758b;
 }
 
 .cb-table-row {
   display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
+  grid-template-columns: 125px minmax(0, 1fr);
 }
 
 .cb-table-label,
 .cb-table-content {
-  border-right: 1.25px solid #65758b;
-  border-bottom: 1.25px solid #65758b;
+  border-right: 1.3px solid #65758b;
+  border-bottom: 1.3px solid #65758b;
 }
 
 .cb-table-label {
-  min-height: 70px;
+  min-height: 74px;
   background: #f2f5f8;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
-  padding: 11px 7px;
+  padding: 12px 8px;
   color: #23354e;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.55;
   font-weight: 850;
 }
 
 .cb-table-content {
   min-width: 0;
-  padding: 13px 15px;
-  font-size: 12.5px;
-  line-height: 1.65;
+  padding: 15px 17px;
+  font-size: 14px;
+  line-height: 1.72;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
 
 .cb-table-content p {
-  margin: 0 0 5px;
+  margin: 0 0 6px;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -293,25 +293,35 @@
 
 .cb-photo-area {
   display: grid;
-  gap: 9px;
+  gap: 12px;
 }
 
 .cb-preview-photos {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 7px;
+  gap: 10px;
 }
 
 .cb-preview-photos.two {
   grid-template-columns: 1fr 1fr;
 }
 
+.cb-preview-photos.one img,
+.cb-preview-photos.one .cb-photo-placeholder {
+  height: 300px;
+}
+
+.cb-preview-photos.two img,
+.cb-preview-photos.two .cb-photo-placeholder {
+  height: 260px;
+}
+
 .cb-preview-photos img,
 .cb-photo-placeholder {
   width: 100%;
-  height: 160px;
   border: 1px solid #d8dee8;
   background: #f5f7fa;
+  border-radius: 4px;
 }
 
 .cb-preview-photos img {
@@ -322,14 +332,14 @@
   display: grid;
   place-items: center;
   color: #9ba6b7;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .cb-photo-copy {
   text-align: center;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 13.5px;
+  line-height: 1.65;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -340,10 +350,10 @@
 
 .cb-photo-copy small {
   display: block;
-  margin-top: 5px;
+  margin-top: 6px;
   color: #59677b;
-  font-size: 11px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.6;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -352,10 +362,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 18px;
-  padding-top: 9px;
+  margin-top: 20px;
+  padding-top: 10px;
   border-top: 1px solid #d7dde7;
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: #647084;
 }
 
@@ -389,7 +399,7 @@
   color: #2a63bc;
   border-radius: 15px;
   padding: 2px 8px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 850;
 }
 
@@ -434,7 +444,7 @@
 
 .cb-row-copy span {
   color: #2d66c0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 850;
 }
 
@@ -443,7 +453,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #34435a;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .cb-row-actions {
@@ -457,7 +467,7 @@
   color: #2963c1;
   border-radius: 6px;
   padding: 6px 8px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
@@ -467,6 +477,59 @@
 
 .cb-print-only {
   display: none;
+}
+
+/* 외부 품질사례 카드 글씨 */
+.case-card .case-copy h3 {
+  font-size: 1.18rem;
+  line-height: 1.45;
+}
+
+.case-card .case-copy p {
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.case-card .case-copy span {
+  font-size: 0.78rem;
+}
+
+.case-card .case-copy b {
+  font-size: 0.9rem;
+}
+
+/* 외부 품질사례 상세보기에서는 화면용 글씨를 더 크게 */
+.content-section .cb-a4-page {
+  max-width: 900px;
+}
+
+.content-section .cb-a4-page .cb-case-head > span {
+  font-size: 15px;
+}
+
+.content-section .cb-a4-page .cb-case-head h1 {
+  font-size: 30px;
+}
+
+.content-section .cb-a4-page .cb-table-label {
+  font-size: 15px;
+}
+
+.content-section .cb-a4-page .cb-table-content {
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.content-section .cb-a4-page .cb-photo-copy {
+  font-size: 14.5px;
+}
+
+.content-section .cb-a4-page .cb-photo-copy small {
+  font-size: 13px;
+}
+
+.content-section .cb-a4-page .cb-page-footer {
+  font-size: 12px;
 }
 
 @media (max-width: 1180px) {
@@ -497,20 +560,21 @@
 
   .cb-a4-page {
     min-height: 0;
-    padding: 24px 18px;
+    padding: 24px 16px;
   }
 
   .cb-table-row {
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: 92px minmax(0, 1fr);
   }
 
   .cb-table-label {
     font-size: 11px;
+    padding: 8px 5px;
   }
 
   .cb-table-content {
     padding: 10px;
-    font-size: 11px;
+    font-size: 11.5px;
   }
 
   .cb-case-head > span {
@@ -518,7 +582,30 @@
   }
 
   .cb-case-head h1 {
-    font-size: 21px;
+    font-size: 22px;
+  }
+
+  .cb-preview-photos.two {
+    grid-template-columns: 1fr;
+  }
+
+  .cb-preview-photos.one img,
+  .cb-preview-photos.one .cb-photo-placeholder,
+  .cb-preview-photos.two img,
+  .cb-preview-photos.two .cb-photo-placeholder {
+    height: 230px;
+  }
+
+  .content-section .cb-a4-page .cb-case-head h1 {
+    font-size: 23px;
+  }
+
+  .content-section .cb-a4-page .cb-table-label {
+    font-size: 11px;
+  }
+
+  .content-section .cb-a4-page .cb-table-content {
+    font-size: 12px;
   }
 }
 
@@ -549,7 +636,7 @@
     max-width: none;
     min-height: 297mm;
     margin: 0;
-    padding: 14mm 14mm 10mm;
+    padding: 12mm 12mm 9mm;
     border: 0;
     box-shadow: none;
     page-break-after: always;
@@ -562,31 +649,47 @@
   }
 
   .cb-print-only .cb-case-head > span {
-    font-size: 11pt;
+    font-size: 10.5pt;
   }
 
   .cb-print-only .cb-case-head h1 {
-    font-size: 18pt;
+    font-size: 17pt;
+  }
+
+  .cb-print-only .cb-table-row {
+    grid-template-columns: 30mm minmax(0, 1fr);
   }
 
   .cb-print-only .cb-table-label {
-    font-size: 10.5pt;
+    font-size: 9.5pt;
+    line-height: 1.45;
   }
 
   .cb-print-only .cb-table-content {
-    font-size: 10.5pt;
-    line-height: 1.55;
+    font-size: 9.5pt;
+    line-height: 1.52;
+    padding: 3mm 3.5mm;
+  }
+
+  .cb-print-only .cb-preview-photos.one img,
+  .cb-print-only .cb-preview-photos.one .cb-photo-placeholder {
+    height: 70mm;
+  }
+
+  .cb-print-only .cb-preview-photos.two img,
+  .cb-print-only .cb-preview-photos.two .cb-photo-placeholder {
+    height: 60mm;
   }
 
   .cb-print-only .cb-photo-copy {
-    font-size: 10pt;
+    font-size: 9pt;
   }
 
   .cb-print-only .cb-photo-copy small {
-    font-size: 9pt;
+    font-size: 8pt;
   }
 
   .cb-print-only .cb-page-footer {
-    font-size: 9pt;
+    font-size: 8.5pt;
   }
 }
