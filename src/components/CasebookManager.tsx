@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import {
   useEffect,
   useMemo,
@@ -16,26 +17,9 @@ import {
 
 import "./CasebookManager.css";
 
-type CasebookCase = {
-  id: number;
-  case_no: number;
-  inspection_type: string;
-  title: string;
-  facility: string;
-  photo1_path: string | null;
-  photo2_path: string | null;
-  photo_caption: string;
-  photo_note: string;
-  standard_title: string;
-  standard_body: string;
-  cause_title: string;
-  cause_body: string;
-  action_body: string;
-  prevention_body: string;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-};
+import type { CasebookCase } from "../lib/casebook";
+import { loadCasebook } from '../lib/casebookQuery';
+import { CasebookImport } from "./CasebookImport";
 
 type Draft = Omit<
   CasebookCase,
@@ -59,6 +43,7 @@ type LineState = {
 };
 
 const EMPTY_DRAFT: Draft = {
+  finding_type: "보완", test_item: "", source_uid: null, source_row: null, source_sheet: "", review_note: "", review_status: "검토대기", published: false,
   case_no: 1,
   inspection_type: "안전성능검사",
   title: "",
@@ -202,7 +187,9 @@ export function CasebookManager() {
   });
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const originalTitle = useRef<string | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
+  const [legacySchema, setLegacySchema] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -224,13 +211,11 @@ export function CasebookManager() {
   const actionRef = useRef<HTMLDivElement>(null);
   const preventionRef = useRef<HTMLDivElement>(null);
 
-  const preview1 = files.photo1
-    ? URL.createObjectURL(files.photo1)
-    : publicAssetUrl(draft.photo1_path);
+  const preview1 = useMemo(() => files.photo1 ? URL.createObjectURL(files.photo1) : publicAssetUrl(draft.photo1_path), [files.photo1, draft.photo1_path]);
+  useEffect(() => () => { if (files.photo1) URL.revokeObjectURL(preview1); }, [files.photo1, preview1]);
 
-  const preview2 = files.photo2
-    ? URL.createObjectURL(files.photo2)
-    : publicAssetUrl(draft.photo2_path);
+  const preview2 = useMemo(() => files.photo2 ? URL.createObjectURL(files.photo2) : publicAssetUrl(draft.photo2_path), [files.photo2, draft.photo2_path]);
+  useEffect(() => () => { if (files.photo2) URL.revokeObjectURL(preview2); }, [files.photo2, preview2]);
 
   const notify = (text: string, error = false) => {
     setMessage(text);
@@ -240,11 +225,8 @@ export function CasebookManager() {
   const load = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("casebook_cases")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("case_no", { ascending: true });
+    const { data, error, legacy } = await loadCasebook(false);
+    setLegacySchema(legacy);
 
     if (error) {
       notify(error.message, true);
@@ -260,6 +242,7 @@ export function CasebookManager() {
       current.id ? current : nextDraft(next),
     );
     setLoading(false);
+    return next;
   };
 
   useEffect(() => {
@@ -288,7 +271,7 @@ export function CasebookManager() {
   }, [draft, files]);
 
   useEffect(() => {
-    const clear = () => setPrintItems([]);
+    const clear = () => { setPrintItems([]); if (originalTitle.current !== null) { document.title = originalTitle.current; originalTitle.current = null; } };
     window.addEventListener("afterprint", clear);
     return () => window.removeEventListener("afterprint", clear);
   }, []);
@@ -318,11 +301,13 @@ export function CasebookManager() {
   };
 
   const save = async () => {
+    if (legacySchema) { notify("먼저 Supabase SQL Editor에서 사례 검토 마이그레이션을 적용하세요.", true); return; }
     if (!draft.title.trim()) {
       notify("사례 제목을 입력해 주세요.", true);
       return;
     }
 
+    if (draft.published && draft.review_status !== "검토완료") { notify("검토완료 사례만 공개할 수 있습니다.", true); return; }
     setBusy(true);
     notify("");
 
@@ -331,18 +316,15 @@ export function CasebookManager() {
       let photo2Path = draft.photo2_path;
 
       if (files.photo1) {
-        const previous = photo1Path;
         photo1Path = await uploadCasebookImage(files.photo1);
-        if (previous) await removePublicFile(previous);
       }
 
       if (files.photo2) {
-        const previous = photo2Path;
         photo2Path = await uploadCasebookImage(files.photo2);
-        if (previous) await removePublicFile(previous);
       }
 
       const payload = {
+        finding_type: draft.finding_type, test_item: draft.test_item, review_note: draft.review_note, review_status: draft.review_status, published: draft.published,
         case_no: Number(draft.case_no) || 1,
         inspection_type: draft.inspection_type.trim(),
         title: draft.title.trim(),
@@ -371,10 +353,12 @@ export function CasebookManager() {
       const { error } = await query;
 
       if (error) throw error;
+      const old = items.find(item => item.id === draft.id);
+      await Promise.allSettled([old?.photo1_path && old.photo1_path !== photo1Path ? removePublicFile(old.photo1_path) : Promise.resolve(), old?.photo2_path && old.photo2_path !== photo2Path ? removePublicFile(old.photo2_path) : Promise.resolve()]);
 
-      await load();
+      const loaded = await load();
       setFiles({ photo1: null, photo2: null });
-      setDraft(nextDraft(items));
+      if (loaded) setDraft(nextDraft(loaded));
       notify(
         draft.id
           ? "사례집 사례를 수정했습니다."
@@ -400,10 +384,7 @@ export function CasebookManager() {
     setBusy(true);
 
     try {
-      await Promise.all([
-        removePublicFile(item.photo1_path),
-        removePublicFile(item.photo2_path),
-      ]);
+
 
       const { error } = await supabase
         .from("casebook_cases")
@@ -412,6 +393,7 @@ export function CasebookManager() {
 
       if (error) throw error;
 
+      await Promise.allSettled([removePublicFile(item.photo1_path), removePublicFile(item.photo2_path)]);
       setSelectedIds((current) =>
         current.filter((id) => id !== item.id),
       );
@@ -481,10 +463,24 @@ export function CasebookManager() {
       return;
     }
 
-    setPrintItems(targets);
+    originalTitle.current = document.title;
+    document.title = `위험물시설_품질관리_사례_${mode === "all" ? "전체" : "선택"}`;
+    setPrintItems([...targets].sort((a,b)=>a.case_no-b.case_no));
 
-    window.setTimeout(() => {
-      window.print();
+    // Wait for React commit, fonts and pictures before measuring the A4 layout.
+    window.setTimeout(async () => {
+      await document.fonts.ready;
+      const pages = Array.from(document.querySelectorAll<HTMLElement>('.cb-print-only .cb-a4-page'));
+      try {
+        await Promise.all(pages.flatMap(page => Array.from(page.querySelectorAll('img')).map(img => Promise.race([img.decode(), new Promise((_, reject) => setTimeout(() => reject(new Error('사진 불러오기 시간 초과')), 10000))]))));
+        const oversized = pages.map((page,index) => page.scrollHeight > 1123 ? index+1 : 0).filter(Boolean);
+        if (oversized.length) throw new Error(`A4 분량 초과: 출력 ${oversized.join(', ')}쪽. 문안을 줄인 뒤 다시 출력하세요.`);
+        window.print();
+      } catch(error) {
+        notify(error instanceof Error ? error.message : '출력을 준비하지 못했습니다.', true);
+        setPrintItems([]);
+        if(originalTitle.current !== null) {document.title=originalTitle.current;originalTitle.current=null;}
+      }
     }, 120);
   };
 
@@ -543,10 +539,18 @@ export function CasebookManager() {
           </div>
         )}
 
+        <CasebookImport items={items} onComplete={load} disabled={legacySchema} />
+        <p>표지·업무개요는 원본 확인 후 별도로 제작합니다. 현재 전체 출력은 등록된 사례 페이지만 포함합니다.</p>
         <div className="cb-editor-grid">
           <section className="cb-form admin-sheet">
             <fieldset>
               <legend>사례 기본정보</legend>
+              <label>검토상태<select value={draft.review_status} onChange={e=>setDraft(d=>({...d,review_status:e.target.value as Draft['review_status'],published:e.target.value==='검토완료' && d.published}))}><option>검토대기</option><option>기준확인필요</option><option>검토완료</option></select></label>
+              <label><input type="checkbox" checked={draft.published} disabled={draft.review_status!=='검토완료'} onChange={e=>update('published',e.target.checked)}/> 공개</label>
+              <label>보완·부적합<select value={draft.finding_type} onChange={e=>update('finding_type',e.target.value)}><option>보완</option><option>부적합</option></select></label>
+              <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
+              <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
+              {draft.source_uid && <p>원본: {draft.source_sheet} {draft.source_row}행</p>}
 
               <div className="admin-field-grid">
                 <label>
@@ -574,6 +578,7 @@ export function CasebookManager() {
                     <option>중간정기검사</option>
                     <option>정밀정기검사</option>
                     <option>기술검토</option>
+                    {[...new Set(items.map(x=>x.inspection_type))].filter(x=>!["안전성능검사","완공검사","중간정기검사","정밀정기검사","기술검토","기타"].includes(x)).map(x=><option key={x}>{x}</option>)}
                     <option>기타</option>
                   </select>
                 </label>
@@ -814,7 +819,7 @@ export function CasebookManager() {
                 className="primary-button"
                 onClick={() => printCases("all")}
               >
-                전체 사례집 PDF
+                전체 사례 PDF
               </button>
             </div>
           </div>
@@ -848,6 +853,8 @@ export function CasebookManager() {
                       {item.inspection_type}
                     </span>
                     <b>{item.title}</b>
+                    <small>{item.finding_type} · {item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
+                    {item.review_note && <p>{item.review_note}</p>}
                   </div>
 
                   <div className="cb-row-actions">
@@ -872,15 +879,16 @@ export function CasebookManager() {
         </section>
       </div>
 
-      {printItems.length > 0 && (
+      {printItems.length > 0 && createPortal(
         <div className="cb-print-only">
-          {printItems.map((item) => (
+          {printItems.map((item, index) => (
             <CasebookPage
               key={`print-${item.id}`}
+              pageNumber={index+1}
               item={item}
             />
           ))}
-        </div>
+        </div>, document.body
       )}
     </>
   );
@@ -946,13 +954,15 @@ type PreviewRefs = {
   prevention: React.RefObject<HTMLDivElement | null>;
 };
 
-function CasebookPage({
+export function CasebookPage({
   item,
   preview1,
   preview2,
+  pageNumber = 1,
   refs,
 }: {
   item: CasebookCase;
+  pageNumber?: number;
   preview1?: string;
   preview2?: string;
   refs?: PreviewRefs;
@@ -1076,7 +1086,7 @@ function CasebookPage({
       <footer className="cb-page-footer">
         <b>한국소방산업기술원 위험물검사부</b>
         <span>
-          Page {Number(item.case_no || 1) + 3}
+          Page {pageNumber}
         </span>
       </footer>
     </article>

@@ -10,6 +10,15 @@ export const supabase = createClient(
   supabaseUrl || "https://example.supabase.co",
   supabaseAnonKey || "missing-anon-key",
   {
+    global: { fetch: async (input, init) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      const abort = () => controller.abort();
+      init?.signal?.addEventListener('abort', abort, {once:true});
+      if (init?.signal?.aborted) controller.abort();
+      try { return await fetch(input, {...init, signal:controller.signal}); }
+      finally {clearTimeout(timer);init?.signal?.removeEventListener('abort', abort);}
+    } },
     auth: {
       persistSession: true,
       autoRefreshToken: true,

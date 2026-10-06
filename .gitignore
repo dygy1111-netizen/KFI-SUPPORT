@@ -5,3 +5,9 @@ dist
 *.log
 *.tsbuildinfo
 .DS_Store
+
+.env.*
+!.env.example
+private-inputs/
+private-analysis/
+private-outputs/

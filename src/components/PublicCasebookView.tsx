@@ -7,7 +7,6 @@ import {
 
 import {
   publicAssetUrl,
-  supabase,
 } from "../lib/supabase";
 
 import type {
@@ -17,25 +16,8 @@ import type {
 import "./CasebookManager.css";
 
 
-type CasebookCase = {
-  id: number;
-  case_no: number;
-  inspection_type: string;
-  title: string;
-  facility: string;
-  photo1_path: string | null;
-  photo2_path: string | null;
-  photo_caption: string;
-  photo_note: string;
-  standard_title: string;
-  standard_body: string;
-  cause_title: string;
-  cause_body: string;
-  action_body: string;
-  prevention_body: string;
-  sort_order: number;
-};
-
+import { loadCasebook } from '../lib/casebookQuery';
+import type { CasebookCase } from "../lib/casebook";
 
 type ZoomLevel =
   | "small"
@@ -84,6 +66,7 @@ export function PublicCasebookView({
   ] = useState<ZoomLevel>("normal");
 
 
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
 
@@ -95,22 +78,15 @@ export function PublicCasebookView({
       const {
         data,
         error: loadError,
-      } = await supabase
-        .from("casebook_cases")
-        .select("*")
-        .order("sort_order", {
-          ascending: true,
-        })
-        .order("case_no", {
-          ascending: true,
-        });
+      } = await loadCasebook(true);
 
       if (!active) {
         return;
       }
 
       if (loadError) {
-        setError(loadError.message);
+        setError("사례를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        if (retry === 0) window.setTimeout(() => { if(active) setRetry(1); }, 700);
 
         setItems([]);
 
@@ -131,7 +107,7 @@ export function PublicCasebookView({
     return () => {
       active = false;
     };
-  }, []);
+  }, [retry]);
 
 
   const categories = useMemo(
@@ -164,7 +140,7 @@ export function PublicCasebookView({
             category;
 
         const searchText = [
-          item.title,
+          item.title, item.inspection_type, item.finding_type, item.test_item,
           item.facility,
           item.photo_caption,
           item.standard_title,
@@ -399,7 +375,7 @@ export function PublicCasebookView({
             <br />
 
             <small>
-              {error}
+              {error} <button onClick={()=>setRetry(x=>x+1)}>다시 시도</button>
             </small>
           </div>
         )}
@@ -710,10 +686,7 @@ function PublicCasebookPage({
 
         <span>
           Page{" "}
-          {Number(
-            item.case_no ||
-              1,
-          ) + 3}
+          {1}
         </span>
       </footer>
     </article>

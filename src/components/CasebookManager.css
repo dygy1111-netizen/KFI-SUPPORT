@@ -856,3 +856,87 @@
     font-size: 8.5pt;
   }
 }
+
+/* Off-screen preflight uses exactly the print geometry. */
+.cb-print-only { display:block; position:fixed; left:-10000px; top:0; width:210mm; }
+  .cb-print-only .cb-a4-page {
+    width: 210mm;
+    max-width: none;
+    min-height: 297mm;
+    margin: 0;
+    padding: 12mm 12mm 9mm;
+    border: 0;
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .cb-print-only .cb-a4-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .cb-print-only .cb-case-head > span {
+    font-size: 10.5pt;
+  }
+
+  .cb-print-only .cb-case-head h1 {
+    font-size: 17pt;
+  }
+
+  .cb-print-only .cb-table-row {
+    grid-template-columns: 30mm minmax(0, 1fr);
+  }
+
+  .cb-print-only .cb-table-label {
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  .cb-print-only .cb-table-content {
+    font-size: 9.5pt;
+    line-height: 1.52;
+    padding: 3mm 3.5mm;
+  }
+
+  /* PDF에서도 절대 자르지 않음 */
+  .cb-print-only .cb-preview-photos img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 72mm;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .cb-print-only .cb-preview-photos.two {
+    align-items: start;
+  }
+
+  .cb-print-only .cb-photo-placeholder {
+    min-height: 55mm;
+  }
+
+  .cb-print-only .cb-photo-copy {
+    font-size: 9pt;
+  }
+
+  .cb-print-only .cb-photo-copy small {
+    font-size: 8pt;
+  }
+
+  .cb-print-only .cb-page-footer {
+    font-size: 8.5pt;
+  }
+
+.cb-print-only .cb-a4-page { box-sizing:border-box; height:297mm; min-height:297mm; overflow:visible; }
+.cb-print-only .cb-preview-photos.two { grid-template-columns:1fr 1fr; }
+.cb-print-only .cb-table-label { min-height:0; padding:3mm 2mm; }
+.cb-print-only .cb-a4-page { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+@media print {
+ body:has(> .cb-print-only) > :not(.cb-print-only) { display:none !important; }
+ body:has(> .cb-print-only) { margin:0; padding:0; }
+ .cb-print-only { position:static; display:block !important; width:210mm; }
+}
+.cb-import table { width:100%; border-collapse:collapse; }
+.cb-import th,.cb-import td { border:1px solid #dce3ee; text-align:left; padding:8px; }

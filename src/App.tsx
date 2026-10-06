@@ -184,9 +184,7 @@ export default function App() {
   };
 
 
-  if (loading) {
-    return <div className="site-shell" />;
-  }
+
 
 
   const config = content.config;
@@ -200,9 +198,10 @@ export default function App() {
         move={move}
       />
 
+      {loading && <div className="system-notice" role="status">데이터 연결 중입니다. 기본 화면을 먼저 표시합니다.</div>}
       {notice && (
         <div className="system-notice">
-          {notice}
+          {notice} <button onClick={()=>void reload()}>다시 시도</button>
         </div>
       )}
 

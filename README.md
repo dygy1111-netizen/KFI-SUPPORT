@@ -24,7 +24,7 @@ ZIP을 풀고 그 안의 **모든 파일과 폴더**를 GitHub 저장소 최상�
 
 1. Supabase 프로젝트에서 `Authentication → Users`로 이동합니다.
 2. `Add user → Create new user`를 선택합니다.
-3. 이메일은 `kfi2275@admin.example.com`으로 입력합니다.
+3. 이메일은 `kfi2275@kfi.or.kr`으로 입력합니다.
 4. 사용할 초기 비밀번호를 입력합니다.
 5. `Auto Confirm User`를 켜고 생성합니다.
 
@@ -40,7 +40,7 @@ ZIP을 풀고 그 안의 **모든 파일과 폴더**를 GitHub 저장소 최상�
 2. 전체 내용을 복사합니다.
 3. Supabase `SQL Editor → New query`에 붙여넣고 `Run`을 누릅니다.
 
-관리자 사용자를 먼저 만든 뒤 SQL을 실행해야 마지막 관리자 권한 등록까지 한 번에 됩니다.
+현재 로그인 이메일은 `src/config/site.ts`의 `kfi2275@kfi.or.kr`입니다. 초기 migration의 예전 예시 이메일과 다를 수 있으므로 신규 프로젝트에서는 아래 문제 해결 항목의 관리자 등록 SQL을 현재 이메일로 실행하세요. 기존 프로젝트의 관리자 계정은 변경하지 않습니다.
 SQL을 먼저 실행했다면 사용자 생성 후 SQL을 다시 실행해도 안전합니다.
 
 ### GitHub Integration을 사용하는 방법
@@ -135,7 +135,7 @@ SQL Editor에서 아래 구문만 다시 실행합니다.
 
 ```sql
 insert into public.admin_users (user_id)
-select id from auth.users where lower(email) = 'kfi2275@admin.example.com'
+select id from auth.users where lower(email) = 'kfi2275@kfi.or.kr'
 on conflict (user_id) do nothing;
 ```
 
@@ -147,3 +147,7 @@ GitHub Actions의 두 Repository secret 이름과 값이 정확한지 확인한 
 
 Supabase SQL Editor에서 migration 전체가 오류 없이 실행됐는지 확인합니다.
 특히 `public.is_admin()`, RLS policy, `public-assets` 버킷이 있어야 합니다.
+
+## 사례 검토 및 일괄 가져오기
+
+신규 비공개 사례 등록, DB 마이그레이션, PDF 출력, 매일 Supabase 읽기 설정은 [운영 안내](docs/casebook-import.md)를 참고하세요. 기존 관리자 계정은 그대로 사용하며, 이 작업 때문에 초기 관리자 생성 SQL을 다시 실행하지 않습니다.

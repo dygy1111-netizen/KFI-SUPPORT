@@ -1,0 +1,24 @@
+name: Supabase daily read
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Read one site configuration identifier
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_KEY"
+          curl --silent --fail --output /dev/null --connect-timeout 10 --max-time 20 \
+            --header "apikey: $SUPABASE_KEY" \
+            --header "Authorization: Bearer $SUPABASE_KEY" \
+            "${SUPABASE_URL%/}/rest/v1/site_config?select=id&limit=1"
