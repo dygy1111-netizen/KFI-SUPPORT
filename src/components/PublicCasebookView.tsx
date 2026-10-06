@@ -1,12 +1,15 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   publicAssetUrl,
+  supabase,
 } from "../lib/supabase";
 
 import type {
@@ -18,6 +21,7 @@ import "./CasebookManager.css";
 
 import { loadCasebook } from '../lib/casebookQuery';
 import { casebookGroup, type CasebookCase } from "../lib/casebook";
+import { CasebookManager, CasebookPage } from "./CasebookManager";
 
 type ZoomLevel =
   | "small"
@@ -67,7 +71,53 @@ export function PublicCasebookView({
 
 
   const [retry, setRetry] = useState(0);
+  const [authReady, setAuthReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editing, setEditing] = useState<CasebookCase | null>(null);
+  const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
+  const originalTitle = useRef<string | null>(null);
+
   useEffect(() => {
+    let active = true;
+
+    const checkAdmin = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!active) return;
+
+      if (!session) {
+        setIsAdmin(false);
+        setAuthReady(true);
+        setEditing(null);
+        return;
+      }
+
+      const { data, error: adminError } = await supabase.rpc("is_admin");
+      if (!active) return;
+
+      setIsAdmin(Boolean(data) && !adminError);
+      setAuthReady(true);
+    };
+
+    void checkAdmin();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      window.setTimeout(() => void checkAdmin(), 0);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) return;
+
     let active = true;
 
     async function load() {
@@ -78,7 +128,7 @@ export function PublicCasebookView({
       const {
         data,
         error: loadError,
-      } = await loadCasebook(true);
+      } = await loadCasebook(!isAdmin);
 
       if (!active) {
         return;
@@ -95,8 +145,12 @@ export function PublicCasebookView({
         return;
       }
 
-      setItems(
-        (data || []) as CasebookCase[],
+      const nextItems = (data || []) as CasebookCase[];
+      setItems(nextItems);
+      setSelected((current) =>
+        current
+          ? nextItems.find((item) => item.id === current.id) || null
+          : null,
       );
 
       setLoading(false);
@@ -107,7 +161,22 @@ export function PublicCasebookView({
     return () => {
       active = false;
     };
-  }, [retry]);
+  }, [retry, isAdmin, authReady]);
+
+  useEffect(() => {
+    if (!printItems.length) return;
+
+    const finish = () => {
+      setPrintItems([]);
+      if (originalTitle.current !== null) {
+        document.title = originalTitle.current;
+        originalTitle.current = null;
+      }
+    };
+
+    window.addEventListener("afterprint", finish, { once: true });
+    return () => window.removeEventListener("afterprint", finish);
+  }, [printItems.length]);
 
 
   const categories = useMemo(
@@ -171,6 +240,117 @@ export function PublicCasebookView({
     ],
   );
 
+  const printReviewedCases = () => {
+    const targets = items
+      .filter(
+        (item) => item.review_status === "검토완료" && item.published,
+      )
+      .sort(
+        (a, b) =>
+          a.case_no - b.case_no ||
+          a.sort_order - b.sort_order ||
+          a.id - b.id,
+      );
+
+    if (!targets.length) {
+      setError("PDF로 출력할 검토완료 사례가 없습니다.");
+      return;
+    }
+
+    originalTitle.current = document.title;
+    document.title = "위험물시설_품질관리_사례집";
+    setPrintItems(targets);
+
+    window.setTimeout(async () => {
+      await document.fonts.ready;
+
+      const pages = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".cb-print-only .cb-a4-page",
+        ),
+      );
+
+      await Promise.allSettled(
+        pages.flatMap((page) =>
+          Array.from(page.querySelectorAll("img")).map((image) =>
+            image.decode(),
+          ),
+        ),
+      );
+
+      const oversized = pages
+        .map((page, index) => (page.scrollHeight > 1123 ? index + 1 : 0))
+        .filter(Boolean);
+
+      if (oversized.length) {
+        setError(
+          `A4 분량을 초과한 사례가 있습니다: ${oversized.join(", ")}쪽`,
+        );
+        setPrintItems([]);
+        if (originalTitle.current !== null) {
+          document.title = originalTitle.current;
+          originalTitle.current = null;
+        }
+        return;
+      }
+
+      window.print();
+    }, 150);
+  };
+
+  const overlays = (
+    <>
+      {editing &&
+        createPortal(
+          <div
+            className="cb-quick-edit-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="품질사례 바로 수정"
+          >
+            <div className="cb-quick-edit-panel">
+              <div className="cb-quick-edit-head">
+                <div>
+                  <b>품질사례 바로 수정</b>
+                  <span>문안·사진·검토상태를 이 화면에서 수정합니다.</span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="수정 화면 닫기"
+                  onClick={() => setEditing(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <CasebookManager
+                initialCaseId={editing.id}
+                showImport={false}
+                showList={false}
+                onClose={() => setEditing(null)}
+                onSaved={() => setRetry((current) => current + 1)}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {printItems.length > 0 &&
+        createPortal(
+          <div className="cb-print-only">
+            {printItems.map((item, index) => (
+              <CasebookPage
+                key={`public-print-${item.id}`}
+                item={item}
+                pageNumber={index + 1}
+              />
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+
 
   if (selected) {
     return (
@@ -195,22 +375,34 @@ export function PublicCasebookView({
           }}
         >
           <div className="public-casebook-toolbar">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                setSelected(null);
+            <div className="public-casebook-toolbar-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setSelected(null);
 
-                setZoom("normal");
+                  setZoom("normal");
 
-                window.scrollTo({
-                  top: 0,
-                  behavior: "smooth",
-                });
-              }}
-            >
-              ← 사례 목록
-            </button>
+                  window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                  });
+                }}
+              >
+                ← 사례 목록
+              </button>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => setEditing(selected)}
+                >
+                  ✎ 이 사례 수정
+                </button>
+              )}
+            </div>
 
 
             <div className="public-casebook-zoom">
@@ -271,6 +463,8 @@ export function PublicCasebookView({
             />
           </div>
         </section>
+
+        {overlays}
       </>
     );
   }
@@ -292,6 +486,27 @@ export function PublicCasebookView({
 
 
       <section className="content-section compact">
+        {isAdmin && (
+          <div className="casebook-admin-banner">
+            <div>
+              <span>관리자 편집 모드</span>
+              <b>검토대기·비공개 사례까지 함께 표시됩니다.</b>
+              <small>
+                카드의 수정 버튼에서 문안과 사진을 고치고, 검토완료로
+                저장하면 자동 공개됩니다.
+              </small>
+            </div>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={printReviewedCases}
+            >
+              검토완료 사례 PDF
+            </button>
+          </div>
+        )}
+
         <div
           style={{
             display: "grid",
@@ -387,68 +602,74 @@ export function PublicCasebookView({
           <div className="case-grid">
             {filtered.map(
               (item) => (
-                <button
+                <article
                   key={item.id}
-                  className="case-card"
-                  onClick={() => {
-                    setSelected(item);
-
-                    setZoom("normal");
-
-                    window.scrollTo({
-                      top: 0,
-                      behavior:
-                        "smooth",
-                    });
-                  }}
+                  className={`case-card-shell ${
+                    isAdmin && !item.published ? "is-private" : ""
+                  }`}
                 >
-                  <div className="case-visual">
-                    {item.photo1_path ? (
-                      <img
-                        src={publicAssetUrl(
-                          item.photo1_path,
-                        )}
-                        alt={item.title}
-                      />
-                    ) : (
-                      <i>
-                        !
-                      </i>
-                    )}
+                  <button
+                    type="button"
+                    className="case-card"
+                    onClick={() => {
+                      setSelected(item);
 
-                    <span>
-                      {
-                        item.inspection_type
-                      }
-                    </span>
-                  </div>
+                      setZoom("normal");
 
-
-                  <div className="case-copy">
-                    <span>
-                      CASE{" "}
-                      {String(
-                        item.case_no,
-                      ).padStart(
-                        2,
-                        "0",
+                      window.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                      });
+                    }}
+                  >
+                    <div className="case-visual">
+                      {item.photo1_path ? (
+                        <img
+                          src={publicAssetUrl(item.photo1_path)}
+                          alt={item.title}
+                        />
+                      ) : (
+                        <i>!</i>
                       )}
-                    </span>
 
-                    <h3>
-                      {item.title}
-                    </h3>
+                      <span>{item.inspection_type}</span>
 
-                    <p>
-                      {item.facility ||
-                        item.cause_title}
-                    </p>
+                      {isAdmin && (
+                        <b
+                          className={
+                            item.review_status === "검토완료"
+                              ? "is-reviewed"
+                              : "is-pending"
+                          }
+                        >
+                          {item.review_status}
+                        </b>
+                      )}
+                    </div>
 
-                    <b>
-                      자세히 보기 →
-                    </b>
-                  </div>
-                </button>
+                    <div className="case-copy">
+                      <span>
+                        CASE {String(item.case_no).padStart(2, "0")}
+                      </span>
+
+                      <h3>{item.title}</h3>
+
+                      <p>{item.facility || item.cause_title}</p>
+
+                      <b>자세히 보기 →</b>
+                    </div>
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className="case-admin-edit"
+                      onClick={() => setEditing(item)}
+                    >
+                      ✎ 수정·사진 첨부
+                    </button>
+                  )}
+                </article>
               ),
             )}
           </div>
@@ -463,6 +684,8 @@ export function PublicCasebookView({
           </div>
         )}
       </section>
+
+      {overlays}
     </>
   );
 }

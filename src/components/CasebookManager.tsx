@@ -178,7 +178,21 @@ function Field({
   );
 }
 
-export function CasebookManager() {
+type CasebookManagerProps = {
+  initialCaseId?: number;
+  showImport?: boolean;
+  showList?: boolean;
+  onClose?: () => void;
+  onSaved?: () => void | Promise<void>;
+};
+
+export function CasebookManager({
+  initialCaseId,
+  showImport = true,
+  showList = false,
+  onClose,
+  onSaved,
+}: CasebookManagerProps = {}) {
   const [items, setItems] = useState<CasebookCase[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [files, setFiles] = useState<PhotoFiles>({
@@ -210,6 +224,31 @@ export function CasebookManager() {
   const causeRef = useRef<HTMLDivElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
   const preventionRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
+  const initialSelectionRef = useRef<number | null>(null);
+
+  const orderedItems = useMemo(
+    () =>
+      [...items].sort(
+        (a, b) =>
+          a.case_no - b.case_no ||
+          a.sort_order - b.sort_order ||
+          a.id - b.id,
+      ),
+    [items],
+  );
+
+  const currentIndex = draft.id
+    ? orderedItems.findIndex((item) => item.id === draft.id)
+    : -1;
+
+  const previousItem =
+    currentIndex > 0 ? orderedItems[currentIndex - 1] : null;
+
+  const nextItem =
+    currentIndex >= 0 && currentIndex < orderedItems.length - 1
+      ? orderedItems[currentIndex + 1]
+      : null;
 
   const preview1 = useMemo(() => files.photo1 ? URL.createObjectURL(files.photo1) : publicAssetUrl(draft.photo1_path), [files.photo1, draft.photo1_path]);
   useEffect(() => () => { if (files.photo1) URL.revokeObjectURL(preview1); }, [files.photo1, preview1]);
@@ -250,6 +289,24 @@ export function CasebookManager() {
   }, []);
 
   useEffect(() => {
+    if (
+      !initialCaseId ||
+      !items.length ||
+      initialSelectionRef.current === initialCaseId
+    ) {
+      return;
+    }
+
+    const selected = items.find((item) => item.id === initialCaseId);
+    if (!selected) return;
+
+    initialSelectionRef.current = initialCaseId;
+    setDraft({ ...selected });
+    setFiles({ photo1: null, photo2: null });
+    notify("");
+  }, [initialCaseId, items]);
+
+  useEffect(() => {
     const measure = () => {
       setLines({
         title: countLines(titleRef.current),
@@ -286,11 +343,18 @@ export function CasebookManager() {
     [lines],
   );
 
-  const edit = (item: CasebookCase) => {
+  const edit = (item: CasebookCase, scroll = true) => {
     setDraft({ ...item });
     setFiles({ photo1: null, photo2: null });
     notify("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (scroll) {
+      window.requestAnimationFrame(() =>
+        editorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        }),
+      );
+    }
   };
 
   const createNew = () => {
@@ -300,16 +364,25 @@ export function CasebookManager() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const save = async () => {
+  const changeReviewStatus = (reviewStatus: Draft["review_status"]) => {
+    setDraft((current) => ({
+      ...current,
+      review_status: reviewStatus,
+      published: reviewStatus === "검토완료",
+    }));
+  };
+
+  const save = async (advance = false, closeAfter = false) => {
     if (legacySchema) { notify("먼저 Supabase SQL Editor에서 사례 검토 마이그레이션을 적용하세요.", true); return; }
     if (!draft.title.trim()) {
       notify("사례 제목을 입력해 주세요.", true);
       return;
     }
 
-    if (draft.published && draft.review_status !== "검토완료") { notify("검토완료 사례만 공개할 수 있습니다.", true); return; }
     setBusy(true);
     notify("");
+
+    const savedId = draft.id;
 
     try {
       let photo1Path = draft.photo1_path;
@@ -324,7 +397,7 @@ export function CasebookManager() {
       }
 
       const payload = {
-        finding_type: draft.finding_type, test_item: draft.test_item, review_note: draft.review_note, review_status: draft.review_status, published: draft.published,
+        finding_type: draft.finding_type, test_item: draft.test_item, review_note: draft.review_note, review_status: draft.review_status, published: draft.review_status === "검토완료",
         case_no: Number(draft.case_no) || 1,
         inspection_type: draft.inspection_type.trim(),
         title: draft.title.trim(),
@@ -358,12 +431,36 @@ export function CasebookManager() {
 
       const loaded = await load();
       setFiles({ photo1: null, photo2: null });
-      if (loaded) setDraft(nextDraft(loaded));
+      if (loaded) {
+        const ordered = [...loaded].sort(
+          (a, b) =>
+            a.case_no - b.case_no ||
+            a.sort_order - b.sort_order ||
+            a.id - b.id,
+        );
+
+        if (savedId) {
+          const savedIndex = ordered.findIndex((item) => item.id === savedId);
+          const target = advance
+            ? ordered[savedIndex + 1] || ordered[savedIndex]
+            : ordered[savedIndex];
+
+          if (target) setDraft({ ...target });
+        } else {
+          setDraft(nextDraft(loaded));
+        }
+      }
+
+      await onSaved?.();
       notify(
-        draft.id
-          ? "사례집 사례를 수정했습니다."
+        savedId
+          ? advance && nextItem
+            ? "저장하고 다음 사례로 이동했습니다."
+            : "사례집 사례를 수정했습니다."
           : "사례집 사례를 저장했습니다.",
       );
+
+      if (closeAfter) onClose?.();
     } catch (error) {
       notify(
         error instanceof Error
@@ -500,10 +597,11 @@ export function CasebookManager() {
         <div className="cb-head">
           <div>
             <span className="section-kicker">QUALITY CASEBOOK</span>
-            <h3>품질관리 사례집 관리</h3>
+            <h3>{initialCaseId ? "품질사례 바로 수정" : "품질사례 등록"}</h3>
             <p>
-              Word 사례집 양식에 맞춰 사례를 등록하고,
-              선택한 사례 또는 전체 사례를 A4 PDF로 출력합니다.
+              {initialCaseId
+                ? "사진과 문안을 수정하고 검토완료로 저장하면 즉시 공개됩니다."
+                : "JSON으로 일괄 등록하거나 새 사례를 직접 추가합니다."}
             </p>
           </div>
 
@@ -522,13 +620,15 @@ export function CasebookManager() {
                 : `⚠ 권장 분량 ${overflowCount}줄 초과`}
             </span>
 
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={createNew}
-            >
-              + 새 사례
-            </button>
+            {!initialCaseId && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={createNew}
+              >
+                + 새 사례
+              </button>
+            )}
           </div>
         </div>
 
@@ -539,14 +639,106 @@ export function CasebookManager() {
           </div>
         )}
 
-        <CasebookImport items={items} onComplete={load} disabled={legacySchema} />
-        <p>표지·업무개요는 원본 확인 후 별도로 제작합니다. 현재 전체 출력은 등록된 사례 페이지만 포함합니다.</p>
+        {showImport && (
+          <CasebookImport
+            items={items}
+            onComplete={load}
+            disabled={legacySchema}
+          />
+        )}
+
         <div className="cb-editor-grid">
-          <section className="cb-form admin-sheet">
+          <section className="cb-form admin-sheet" ref={editorRef}>
+            <div className="cb-edit-toolbar">
+              <div className="cb-edit-current">
+                <span>
+                  {draft.id
+                    ? `사례 ${String(draft.case_no).padStart(2, "0")}`
+                    : "새 사례"}
+                </span>
+                <b>{draft.title || "제목을 입력해 주세요"}</b>
+              </div>
+
+              {draft.id && (
+                <div className="cb-edit-navigation">
+                  <button
+                    type="button"
+                    disabled={!previousItem || busy}
+                    onClick={() => previousItem && edit(previousItem, false)}
+                  >
+                    ← 이전
+                  </button>
+                  <span>
+                    {currentIndex + 1}/{orderedItems.length}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!nextItem || busy}
+                    onClick={() => nextItem && edit(nextItem, false)}
+                  >
+                    다음 →
+                  </button>
+                </div>
+              )}
+
+              <label className="cb-review-control">
+                <span>검토상태</span>
+                <select
+                  value={draft.review_status}
+                  disabled={busy}
+                  onChange={(event) =>
+                    changeReviewStatus(
+                      event.target.value as Draft["review_status"],
+                    )
+                  }
+                >
+                  <option>검토대기</option>
+                  <option>기준확인필요</option>
+                  <option>검토완료</option>
+                </select>
+                <small>
+                  {draft.review_status === "검토완료"
+                    ? "저장 시 자동 공개"
+                    : "저장 시 비공개"}
+                </small>
+              </label>
+
+              <div className="cb-edit-save-actions">
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={busy}
+                  onClick={() => void save(false, false)}
+                >
+                  {busy ? "저장 중…" : "저장"}
+                </button>
+
+                {draft.id && nextItem && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => void save(true, false)}
+                  >
+                    저장 후 다음
+                  </button>
+                )}
+
+                {onClose && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={onClose}
+                  >
+                    닫기
+                  </button>
+                )}
+              </div>
+            </div>
+
             <fieldset>
               <legend>사례 기본정보</legend>
-              <label>검토상태<select value={draft.review_status} onChange={e=>setDraft(d=>({...d,review_status:e.target.value as Draft['review_status'],published:e.target.value==='검토완료' && d.published}))}><option>검토대기</option><option>기준확인필요</option><option>검토완료</option></select></label>
-              <label><input type="checkbox" checked={draft.published} disabled={draft.review_status!=='검토완료'} onChange={e=>update('published',e.target.checked)}/> 공개</label>
               <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
               <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
               {draft.source_uid && <p>원본: {draft.source_sheet} {draft.source_row}행</p>}
@@ -739,7 +931,7 @@ export function CasebookManager() {
                 type="button"
                 className="primary-button"
                 disabled={busy}
-                onClick={() => void save()}
+                onClick={() => void save(false, false)}
               >
                 {busy
                   ? "저장 중…"
@@ -749,13 +941,35 @@ export function CasebookManager() {
               </button>
 
               {draft.id && (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={createNew}
-                >
-                  수정 취소
-                </button>
+                <>
+                  {nextItem && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() => void save(true, false)}
+                    >
+                      저장 후 다음 사례
+                    </button>
+                  )}
+                  {onClose ? (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={onClose}
+                    >
+                      닫기
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={createNew}
+                    >
+                      수정 취소
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </section>
@@ -787,7 +1001,7 @@ export function CasebookManager() {
           </section>
         </div>
 
-        <section className="cb-list">
+        {showList && <section className="cb-list">
           <div className="cb-list-head">
             <div>
               <h3>등록된 사례</h3>
@@ -875,10 +1089,10 @@ export function CasebookManager() {
               아직 등록된 사례집 사례가 없습니다.
             </div>
           )}
-        </section>
+        </section>}
       </div>
 
-      {printItems.length > 0 && createPortal(
+      {showList && printItems.length > 0 && createPortal(
         <div className="cb-print-only">
           {printItems.map((item, index) => (
             <CasebookPage

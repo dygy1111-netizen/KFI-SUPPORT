@@ -81,6 +81,96 @@
   gap: 18px;
 }
 
+.cb-edit-toolbar {
+  position: sticky;
+  top: 82px;
+  z-index: 18;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #cbdaf0;
+  border-radius: 10px;
+  background: rgb(248 251 255 / 96%);
+  box-shadow: 0 8px 22px rgb(28 61 111 / 12%);
+  backdrop-filter: blur(8px);
+}
+
+.cb-edit-current {
+  min-width: 0;
+}
+
+.cb-edit-current span,
+.cb-edit-current b {
+  display: block;
+}
+
+.cb-edit-current span {
+  color: #2d66c0;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.cb-edit-current b {
+  overflow: hidden;
+  color: #2f3f57;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cb-edit-navigation,
+.cb-edit-save-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cb-edit-navigation button,
+.cb-edit-save-actions button {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.cb-edit-navigation span {
+  min-width: 44px;
+  color: #617087;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.cb-review-control {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.cb-review-control > span {
+  color: #526178;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.cb-review-control select {
+  min-height: 36px;
+  border: 1px solid #cbd6e5;
+  border-radius: 7px;
+  background: #fff;
+  padding: 0 30px 0 9px;
+  color: #34445c;
+  font-weight: 800;
+}
+
+.cb-review-control small {
+  grid-column: 1 / -1;
+  color: #61728a;
+  font-size: 0.69rem;
+  text-align: right;
+}
+
 .cb-form fieldset {
   margin: 0;
 }
@@ -263,6 +353,9 @@
 
 .cb-table-content {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 15px 17px;
   font-size: 14px;
   line-height: 1.72;
@@ -280,9 +373,17 @@
   margin-bottom: 0;
 }
 
+.cb-bullet {
+  padding-left: 1.45em;
+  text-indent: -1.45em;
+}
+
 .cb-bullet::before {
-  content: "○ ";
+  content: "○";
+  display: inline-block;
+  width: 1.45em;
   font-weight: 900;
+  text-indent: 0;
 }
 
 .cb-strong {
@@ -512,6 +613,159 @@
   font-size: 0.9rem;
 }
 
+.case-card-shell {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  border-radius: 11px;
+}
+
+.case-card-shell.is-private {
+  outline: 2px dashed #e0a54d;
+  outline-offset: 3px;
+}
+
+.case-card-shell .case-card {
+  width: 100%;
+  height: 100%;
+}
+
+.case-visual b.is-reviewed {
+  background: rgb(38 128 82 / 94%);
+}
+
+.case-visual b.is-pending {
+  background: rgb(188 116 25 / 94%);
+}
+
+.case-admin-edit {
+  width: calc(100% - 18px);
+  margin: 8px auto 0;
+  border: 1px solid #aac5ed;
+  border-radius: 8px;
+  background: #edf5ff;
+  padding: 9px 12px;
+  color: #225fb9;
+  font-size: 0.84rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.case-admin-edit:hover {
+  border-color: #6d9fdf;
+  background: #e2efff;
+}
+
+.casebook-admin-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 15px 17px;
+  border: 1px solid #b9d1f2;
+  border-radius: 11px;
+  background: #f1f7ff;
+}
+
+.casebook-admin-banner div {
+  min-width: 0;
+}
+
+.casebook-admin-banner span,
+.casebook-admin-banner b,
+.casebook-admin-banner small {
+  display: block;
+}
+
+.casebook-admin-banner span {
+  color: #2462bc;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.casebook-admin-banner b {
+  margin-top: 2px;
+  color: #2e405b;
+}
+
+.casebook-admin-banner small {
+  margin-top: 3px;
+  color: #66758b;
+  line-height: 1.55;
+}
+
+.public-casebook-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cb-quick-edit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  overflow-y: auto;
+  background: rgb(11 25 49 / 72%);
+  padding: 18px;
+}
+
+.cb-quick-edit-panel {
+  width: min(1500px, 100%);
+  min-height: calc(100vh - 36px);
+  margin: 0 auto;
+  border-radius: 15px;
+  background: #f6f8fc;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 30%);
+}
+
+.cb-quick-edit-head {
+  position: sticky;
+  top: -1px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px -4px 14px;
+  padding: 11px 13px;
+  border: 1px solid #d5deeb;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 5px 18px rgb(28 48 83 / 9%);
+}
+
+.cb-quick-edit-head b,
+.cb-quick-edit-head span {
+  display: block;
+}
+
+.cb-quick-edit-head b {
+  color: #273a56;
+  font-size: 1rem;
+}
+
+.cb-quick-edit-head span {
+  color: #6a788c;
+  font-size: 0.78rem;
+}
+
+.cb-quick-edit-head > button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d6deea;
+  border-radius: 50%;
+  background: #fff;
+  color: #4c5d73;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.cb-quick-edit-panel .cb-edit-toolbar {
+  top: 66px;
+}
+
 /* 외부 상세 화면 */
 .content-section .cb-a4-page {
   max-width: 920px;
@@ -565,6 +819,16 @@
     grid-template-columns: 1fr;
   }
 
+  .cb-edit-toolbar {
+    top: 74px;
+    grid-template-columns: minmax(160px, 1fr) auto auto;
+  }
+
+  .cb-edit-save-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
   .cb-preview-column {
     position: static;
   }
@@ -584,6 +848,60 @@
 
   .cb-photo-input-grid {
     grid-template-columns: 1fr;
+  }
+
+  .casebook-admin-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .casebook-admin-banner button {
+    width: 100%;
+  }
+
+  .public-casebook-toolbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cb-quick-edit-backdrop {
+    padding: 0;
+  }
+
+  .cb-quick-edit-panel {
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 10px;
+  }
+
+  .cb-quick-edit-panel .cb-head {
+    display: none;
+  }
+
+  .cb-quick-edit-panel .cb-edit-toolbar {
+    top: 61px;
+  }
+
+  .cb-edit-toolbar {
+    position: sticky;
+    top: 58px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .cb-edit-navigation,
+  .cb-edit-save-actions {
+    grid-column: auto;
+    justify-content: stretch;
+  }
+
+  .cb-edit-navigation button,
+  .cb-edit-save-actions button {
+    flex: 1;
+  }
+
+  .cb-review-control {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .cb-a4-page {
