@@ -9,6 +9,30 @@ export type CasebookCase = {
   review_status: ReviewStatus; published: boolean; created_at?: string; updated_at?: string;
 };
 export type ImportCase = Omit<CasebookCase, 'id' | 'created_at' | 'updated_at'>;
+
+const PRODUCT_INSPECTION_TYPES = new Set([
+  '교반기',
+  '누설감지설비',
+  '운반용기',
+  '위치표시형밸브',
+  '이중벽탱크',
+  '포소화약제탱크',
+  '폼챔버',
+]);
+
+const FACILITY_INSPECTION_TYPES = new Set([
+  '탱크 완공검사',
+  '정밀정기검사',
+  '중간정기검사',
+]);
+
+export function casebookGroup(inspectionType: string) {
+  const normalized = inspectionType.trim();
+  if (PRODUCT_INSPECTION_TYPES.has(normalized)) return '위험물제품';
+  if (FACILITY_INSPECTION_TYPES.has(normalized)) return '위험물시설';
+  return '분류 확인';
+}
+
 const textFields = ['inspection_type','title','facility','standard_title','standard_body','cause_title','cause_body','action_body','prevention_body','finding_type','test_item','source_sheet','review_note'] as const;
 export function parseImport(input: unknown): {rows: ImportCase[]; errors: string[]} {
   if (!Array.isArray(input) || input.length > 2000) throw new Error('최대 2,000건의 JSON 배열을 선택하세요.');
