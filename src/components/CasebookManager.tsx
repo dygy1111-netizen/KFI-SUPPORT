@@ -17,7 +17,7 @@ import {
 
 import "./CasebookManager.css";
 
-import type { CasebookCase } from "../lib/casebook";
+import { casebookGroup, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 
@@ -547,7 +547,6 @@ export function CasebookManager() {
               <legend>사례 기본정보</legend>
               <label>검토상태<select value={draft.review_status} onChange={e=>setDraft(d=>({...d,review_status:e.target.value as Draft['review_status'],published:e.target.value==='검토완료' && d.published}))}><option>검토대기</option><option>기준확인필요</option><option>검토완료</option></select></label>
               <label><input type="checkbox" checked={draft.published} disabled={draft.review_status!=='검토완료'} onChange={e=>update('published',e.target.checked)}/> 공개</label>
-              <label>보완·부적합<select value={draft.finding_type} onChange={e=>update('finding_type',e.target.value)}><option>보완</option><option>부적합</option></select></label>
               <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
               <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
               {draft.source_uid && <p>원본: {draft.source_sheet} {draft.source_row}행</p>}
@@ -713,7 +712,7 @@ export function CasebookManager() {
               <legend>개선 및 예방</legend>
 
               <Field
-                label="개선 및 보완조치"
+                label="개선 조치"
                 value={draft.action_body}
                 onChange={(value) => update("action_body", value)}
                 rows={7}
@@ -850,10 +849,10 @@ export function CasebookManager() {
                   <div className="cb-row-copy">
                     <span>
                       사례 {String(item.case_no).padStart(2, "0")} ·{" "}
-                      {item.inspection_type}
+                      {casebookGroup(item.inspection_type)} · {item.inspection_type}
                     </span>
                     <b>{item.title}</b>
-                    <small>{item.finding_type} · {item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
+                    <small>{item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
                     {item.review_note && <p>{item.review_note}</p>}
                   </div>
 
@@ -981,7 +980,7 @@ export function CasebookPage({
     <article className="cb-a4-page">
       <header className="cb-case-head">
         <span>
-          [사례 {String(item.case_no || 0).padStart(2, "0")}] 위험물시설 ·{" "}
+          [사례 {String(item.case_no || 0).padStart(2, "0")}] {casebookGroup(item.inspection_type)} ·{" "}
           {item.inspection_type || "검사구분"}
         </span>
 
@@ -1058,7 +1057,7 @@ export function CasebookPage({
           </div>
         </CaseRow>
 
-        <CaseRow label={"개선 및\n보완조치"}>
+        <CaseRow label={"개선\n조치"}>
           <div className="cb-copy" ref={refs?.action}>
             {splitLines(item.action_body).map(
               (line, index) => (
