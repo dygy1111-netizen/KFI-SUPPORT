@@ -71,7 +71,7 @@
 
 .cb-editor-grid {
   display: grid;
-  grid-template-columns: minmax(390px, 0.82fr) minmax(620px, 1.18fr);
+  grid-template-columns: minmax(360px, 0.44fr) minmax(460px, 0.56fr);
   gap: 18px;
   align-items: start;
 }
@@ -194,6 +194,52 @@
   margin: 0;
 }
 
+.cb-editor-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.cb-editor-tabs button {
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #d6dfeb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #596a82;
+  padding: 7px 6px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.cb-editor-tabs button span {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf1f7;
+  color: #697990;
+  font-size: 0.68rem;
+}
+
+.cb-editor-tabs button.active {
+  border-color: #7099df;
+  background: #edf4ff;
+  color: #255fba;
+}
+
+.cb-editor-tabs button.active span {
+  background: #386dcc;
+  color: #ffffff;
+}
+
 .cb-field {
   display: grid;
   gap: 6px;
@@ -291,13 +337,22 @@
 .cb-preview-column {
   position: sticky;
   top: 90px;
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .cb-preview-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: flex;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 7px;
+  padding: 7px 4px;
+  background: #f6f8fc;
   color: #607087;
   font-size: 0.8rem;
 }
@@ -842,7 +897,7 @@
   height: 280px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 940px) {
   .cb-editor-grid {
     grid-template-columns: 1fr;
   }
@@ -853,11 +908,14 @@
 
   .cb-preview-column {
     position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 }
 
 /* 수정창 자체가 좁아질 때도 버튼 글자가 세로로 찌그러지지 않도록 처리 */
-@container (max-width: 620px) {
+@container (max-width: 480px) {
   .cb-edit-toolbar {
     grid-template-areas:
       "current"
@@ -901,6 +959,10 @@
 
   .cb-photo-input-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cb-editor-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .casebook-admin-banner {

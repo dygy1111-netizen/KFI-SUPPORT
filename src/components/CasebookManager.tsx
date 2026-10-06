@@ -42,6 +42,13 @@ type LineState = {
   prevention: number;
 };
 
+type EditorSection =
+  | "basic"
+  | "photos"
+  | "standard"
+  | "cause"
+  | "action";
+
 const EMPTY_DRAFT: Draft = {
   finding_type: "보완", test_item: "", source_uid: null, source_row: null, source_sheet: "", review_note: "", review_status: "검토대기", published: false,
   case_no: 1,
@@ -69,6 +76,14 @@ const LINE_LIMITS: LineState = {
   action: 7,
   prevention: 4,
 };
+
+const EDITOR_SECTIONS: Array<[EditorSection, string]> = [
+  ["basic", "기본정보"],
+  ["photos", "사진"],
+  ["standard", "검사기준"],
+  ["cause", "발생사유"],
+  ["action", "개선·예방"],
+];
 
 function nextDraft(items: CasebookCase[]): Draft {
   const maxNo = items.reduce(
@@ -270,6 +285,8 @@ export function CasebookManager({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
+  const [editorSection, setEditorSection] =
+    useState<EditorSection>("basic");
 
   const [lines, setLines] = useState<LineState>({
     title: 1,
@@ -422,6 +439,7 @@ export function CasebookManager({
   const createNew = () => {
     setDraft(nextDraft(items));
     setFiles({ photo1: null, photo2: null });
+    setEditorSection("basic");
     notify("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -785,7 +803,21 @@ export function CasebookManager({
               </div>
             </div>
 
-            <fieldset>
+            <nav className="cb-editor-tabs" aria-label="사례 수정 항목">
+              {EDITOR_SECTIONS.map(([key, label], index) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={editorSection === key ? "active" : ""}
+                  onClick={() => setEditorSection(key)}
+                >
+                  <span>{index + 1}</span>
+                  {label}
+                </button>
+              ))}
+            </nav>
+
+            <fieldset hidden={editorSection !== "basic"}>
               <legend>사례 기본정보</legend>
               <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
               <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
@@ -854,7 +886,7 @@ export function CasebookManager({
               />
             </fieldset>
 
-            <fieldset>
+            <fieldset hidden={editorSection !== "photos"}>
               <legend>관련 사진</legend>
 
               <div className="cb-photo-input-grid">
@@ -904,7 +936,7 @@ export function CasebookManager({
               />
             </fieldset>
 
-            <fieldset>
+            <fieldset hidden={editorSection !== "standard"}>
               <legend>검사 기준</legend>
 
               <Field
@@ -926,7 +958,7 @@ export function CasebookManager({
               />
             </fieldset>
 
-            <fieldset>
+            <fieldset hidden={editorSection !== "cause"}>
               <legend>발생 사유</legend>
 
               <Field
@@ -948,7 +980,7 @@ export function CasebookManager({
               />
             </fieldset>
 
-            <fieldset>
+            <fieldset hidden={editorSection !== "action"}>
               <legend>개선 및 예방</legend>
 
               <Field
