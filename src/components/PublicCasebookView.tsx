@@ -17,7 +17,7 @@ import "./CasebookManager.css";
 
 
 import { loadCasebook } from '../lib/casebookQuery';
-import type { CasebookCase } from "../lib/casebook";
+import { casebookGroup, type CasebookCase } from "../lib/casebook";
 
 type ZoomLevel =
   | "small"
@@ -140,7 +140,7 @@ export function PublicCasebookView({
             category;
 
         const searchText = [
-          item.title, item.inspection_type, item.finding_type, item.test_item,
+          item.title, item.inspection_type, item.test_item,
           item.facility,
           item.photo_caption,
           item.standard_title,
@@ -494,7 +494,7 @@ function PublicCasebookPage({
             2,
             "0",
           )}
-          ] 위험물시설 ·{" "}
+          ] {casebookGroup(item.inspection_type)} ·{" "}
           {
             item.inspection_type
           }
@@ -634,7 +634,7 @@ function PublicCasebookPage({
 
         <CaseRow
           label={
-            "개선 및\n보완조치"
+            "개선\n조치"
           }
         >
           <div className="cb-copy">
