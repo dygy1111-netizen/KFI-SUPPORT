@@ -101,13 +101,75 @@ function countLines(element: HTMLElement | null) {
 function splitLines(text: string) {
   return text
     .split("\n")
-    .map((line) => line.trim())
+    .map((line) => line.trim().replace(/^[○◦•]\s*/, ""))
     .filter(Boolean);
 }
 
+function splitStandardLines(text: string) {
+  return text
+    .split(/(?:\r?\n|[;；])+/)
+    .map((line) => line.trim().replace(/^[○◦•]\s*/, ""))
+    .filter(Boolean);
+}
+
+async function normalizeCasebookImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("사진 파일만 첨부할 수 있습니다.");
+  }
+
+  if (file.size > 30 * 1024 * 1024) {
+    throw new Error("사진 한 장의 원본 크기는 30MB 이하여야 합니다.");
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
+    const maxEdge = 2000;
+    const scale = Math.min(
+      1,
+      maxEdge / bitmap.width,
+      maxEdge / bitmap.height,
+    );
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      bitmap.close();
+      return file;
+    }
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.9),
+    );
+
+    if (!blob || (scale === 1 && blob.size >= file.size)) {
+      return file;
+    }
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "case-photo";
+    return new File([blob], `${baseName}.webp`, {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+}
+
 async function uploadCasebookImage(file: File) {
+  const optimizedFile = await normalizeCasebookImage(file);
   const ext =
-    file.name
+    optimizedFile.name
       .split(".")
       .pop()
       ?.toLowerCase()
@@ -118,8 +180,8 @@ async function uploadCasebookImage(file: File) {
 
   const { error } = await supabase.storage
     .from(PUBLIC_ASSET_BUCKET)
-    .upload(path, file, {
-      contentType: file.type || "application/octet-stream",
+    .upload(path, optimizedFile, {
+      contentType: optimizedFile.type || "application/octet-stream",
       upsert: false,
     });
 
@@ -594,33 +656,29 @@ export function CasebookManager({
   return (
     <>
       <div className="cb-manager">
-        <div className="cb-head">
-          <div>
-            <span className="section-kicker">QUALITY CASEBOOK</span>
-            <h3>{initialCaseId ? "품질사례 바로 수정" : "품질사례 등록"}</h3>
-            <p>
-              {initialCaseId
-                ? "사진과 문안을 수정하고 검토완료로 저장하면 즉시 공개됩니다."
-                : "JSON으로 일괄 등록하거나 새 사례를 직접 추가합니다."}
-            </p>
-          </div>
+        {!initialCaseId && (
+          <div className="cb-head">
+            <div>
+              <span className="section-kicker">QUALITY CASEBOOK</span>
+              <h3>품질사례 등록</h3>
+              <p>JSON으로 일괄 등록하거나 새 사례를 직접 추가합니다.</p>
+            </div>
 
-          <div className="cb-head-actions">
-            <span
-              className={`cb-page-state ${
-                overflowCount === 0
-                  ? "ok"
-                  : overflowCount <= 2
-                    ? "warn"
-                    : "danger"
-              }`}
-            >
-              {overflowCount === 0
-                ? "● 현재 페이지 적합"
-                : `⚠ 권장 분량 ${overflowCount}줄 초과`}
-            </span>
+            <div className="cb-head-actions">
+              <span
+                className={`cb-page-state ${
+                  overflowCount === 0
+                    ? "ok"
+                    : overflowCount <= 2
+                      ? "warn"
+                      : "danger"
+                }`}
+              >
+                {overflowCount === 0
+                  ? "● 현재 페이지 적합"
+                  : `⚠ 권장 분량 ${overflowCount}줄 초과`}
+              </span>
 
-            {!initialCaseId && (
               <button
                 type="button"
                 className="secondary-button"
@@ -628,9 +686,9 @@ export function CasebookManager({
               >
                 + 새 사례
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         {message && (
           <div className={`admin-message ${failed ? "error" : ""}`}>
@@ -724,16 +782,6 @@ export function CasebookManager({
                   </button>
                 )}
 
-                {onClose && (
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={busy}
-                    onClick={onClose}
-                  >
-                    닫기
-                  </button>
-                )}
               </div>
             </div>
 
@@ -1143,6 +1191,9 @@ function PhotoInput({
           {file?.name ||
             (preview ? "기존 사진 유지" : "사진을 선택하세요")}
         </small>
+        <small className="cb-photo-optimize-note">
+          원본 비율 유지 · 큰 사진은 긴 변 2,000px 이하로 자동 최적화
+        </small>
       </label>
 
       {preview && (
@@ -1241,15 +1292,19 @@ export function CasebookPage({
 
         <CaseRow label={"검사 기준\n(관련 법령)"}>
           <div className="cb-copy" ref={refs?.standard}>
-            {item.standard_title && (
-              <p className="cb-bullet cb-strong">
-                {item.standard_title}
-              </p>
+            {splitStandardLines(item.standard_title).map(
+              (line, index) => (
+                <p className="cb-bullet cb-strong" key={`title-${index}`}>
+                  {line}
+                </p>
+              ),
             )}
 
-            {splitLines(item.standard_body).map(
+            {splitStandardLines(item.standard_body).map(
               (line, index) => (
-                <p key={index}>{line}</p>
+                <p className="cb-bullet" key={`body-${index}`}>
+                  {line}
+                </p>
               ),
             )}
           </div>
@@ -1257,15 +1312,17 @@ export function CasebookPage({
 
         <CaseRow label="발생 사유">
           <div className="cb-copy" ref={refs?.cause}>
-            {item.cause_title && (
-              <p className="cb-bullet cb-strong">
-                {item.cause_title}
+            {splitLines(item.cause_title).map((line, index) => (
+              <p className="cb-bullet cb-strong" key={`title-${index}`}>
+                {line}
               </p>
-            )}
+            ))}
 
             {splitLines(item.cause_body).map(
               (line, index) => (
-                <p key={index}>{line}</p>
+                <p className="cb-bullet" key={`body-${index}`}>
+                  {line}
+                </p>
               ),
             )}
           </div>

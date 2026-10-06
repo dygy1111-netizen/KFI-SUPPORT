@@ -79,6 +79,7 @@
 .cb-form {
   display: grid;
   gap: 18px;
+  container-type: inline-size;
 }
 
 .cb-edit-toolbar {
@@ -86,10 +87,13 @@
   top: 82px;
   z-index: 18;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto auto auto;
+  grid-template-areas:
+    "current review"
+    "navigation actions";
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 9px 14px;
+  padding: 14px 15px;
   border: 1px solid #cbdaf0;
   border-radius: 10px;
   background: rgb(248 251 255 / 96%);
@@ -98,6 +102,7 @@
 }
 
 .cb-edit-current {
+  grid-area: current;
   min-width: 0;
 }
 
@@ -127,10 +132,20 @@
   gap: 6px;
 }
 
+.cb-edit-navigation {
+  grid-area: navigation;
+}
+
+.cb-edit-save-actions {
+  grid-area: actions;
+  justify-content: flex-end;
+}
+
 .cb-edit-navigation button,
 .cb-edit-save-actions button {
   min-height: 36px;
   padding: 7px 10px;
+  white-space: nowrap;
 }
 
 .cb-edit-navigation span {
@@ -142,8 +157,10 @@
 }
 
 .cb-review-control {
+  grid-area: review;
+  min-width: 190px;
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto minmax(112px, 1fr);
   align-items: center;
   gap: 2px 6px;
 }
@@ -152,6 +169,7 @@
   color: #526178;
   font-size: 0.72rem;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .cb-review-control select {
@@ -169,6 +187,7 @@
   color: #61728a;
   font-size: 0.69rem;
   text-align: right;
+  white-space: nowrap;
 }
 
 .cb-form fieldset {
@@ -218,7 +237,7 @@
 }
 
 .cb-photo-box {
-  min-height: 160px;
+  height: 200px;
   border: 2px dashed #c7d2e2;
   border-radius: 9px;
   background: #f9fbfe;
@@ -234,8 +253,7 @@
 .cb-photo-box img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 300px;
+  height: 100%;
   object-fit: contain;
   background: #f5f7fa;
 }
@@ -252,6 +270,13 @@
   margin-top: 5px;
   color: #77859a;
   font-size: 0.76rem;
+}
+
+.cb-photo-input .cb-photo-optimize-note {
+  margin-top: 2px;
+  color: #3f6ba9;
+  font-size: 0.69rem;
+  line-height: 1.45;
 }
 
 .cb-remove-photo {
@@ -417,8 +442,7 @@
 .cb-preview-photos img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 460px;
+  height: 320px;
   object-fit: contain;
   object-position: center;
   border: 1px solid #d8dee8;
@@ -434,6 +458,7 @@
 
 /* 사진 2장 */
 .cb-preview-photos.two img {
+  height: 260px;
   max-width: 100%;
   margin: 0 auto;
 }
@@ -803,8 +828,7 @@
 /* 외부 상세 사진도 절대 자르지 않음 */
 .content-section .cb-a4-page .cb-preview-photos img {
   width: 100%;
-  height: auto;
-  max-height: 560px;
+  height: 360px;
   object-fit: contain;
   object-position: center;
 }
@@ -814,6 +838,10 @@
   align-items: start;
 }
 
+.content-section .cb-a4-page .cb-preview-photos.two img {
+  height: 280px;
+}
+
 @media (max-width: 1180px) {
   .cb-editor-grid {
     grid-template-columns: 1fr;
@@ -821,16 +849,41 @@
 
   .cb-edit-toolbar {
     top: 74px;
-    grid-template-columns: minmax(160px, 1fr) auto auto;
-  }
-
-  .cb-edit-save-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
   }
 
   .cb-preview-column {
     position: static;
+  }
+}
+
+/* 수정창 자체가 좁아질 때도 버튼 글자가 세로로 찌그러지지 않도록 처리 */
+@container (max-width: 620px) {
+  .cb-edit-toolbar {
+    grid-template-areas:
+      "current"
+      "review"
+      "navigation"
+      "actions";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cb-review-control {
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .cb-review-control small {
+    text-align: left;
+  }
+
+  .cb-edit-navigation,
+  .cb-edit-save-actions {
+    width: 100%;
+  }
+
+  .cb-edit-navigation button,
+  .cb-edit-save-actions button {
+    flex: 1;
   }
 }
 
@@ -885,13 +938,17 @@
   .cb-edit-toolbar {
     position: sticky;
     top: 58px;
+    grid-template-areas:
+      "current"
+      "review"
+      "navigation"
+      "actions";
     grid-template-columns: 1fr;
     gap: 8px;
   }
 
   .cb-edit-navigation,
   .cb-edit-save-actions {
-    grid-column: auto;
     justify-content: stretch;
   }
 
@@ -902,6 +959,7 @@
 
   .cb-review-control {
     grid-template-columns: auto minmax(0, 1fr);
+    min-width: 0;
   }
 
   .cb-a4-page {
@@ -938,8 +996,7 @@
 
   .cb-preview-photos img {
     width: 100%;
-    height: auto;
-    max-height: 520px;
+    height: 280px;
     object-fit: contain;
   }
 
@@ -1249,6 +1306,8 @@
 
 .cb-print-only .cb-a4-page { box-sizing:border-box; height:297mm; min-height:297mm; overflow:visible; }
 .cb-print-only .cb-preview-photos.two { grid-template-columns:1fr 1fr; }
+.cb-print-only .cb-preview-photos.one img { height:72mm; max-height:72mm; }
+.cb-print-only .cb-preview-photos.two img { height:58mm; max-height:58mm; }
 .cb-print-only .cb-table-label { min-height:0; padding:3mm 2mm; }
 .cb-print-only .cb-a4-page { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 @media print {
