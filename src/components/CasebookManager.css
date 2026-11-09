@@ -1165,36 +1165,203 @@
  .content-section .cb-a4-page .cb-case-head h1 { font-size:26px; }
  .cb-table-row { grid-template-columns:88px minmax(0,1fr); }
 }
-/* Measurement and print share exactly the same A4 geometry. */
-.cb-print-only { display:block; position:fixed; left:-10000px; top:0; width:210mm; }
+
+/* ============================================
+   KFI 품질관리 사례집 A4 PDF 출력 전용 스타일
+   ============================================ */
+
+/* 화면에 보이지 않는 PDF 출력 영역 */
+.cb-print-only {
+  display: block;
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 210mm;
+}
+
+/* A4 용지 */
 .cb-print-only .cb-a4-page {
- --print-font:11.5pt; --print-photo:68mm; --print-pad:3mm;
- box-sizing:border-box; width:210mm; max-width:none; height:297mm; min-height:297mm;
- margin:0; padding:12mm 12mm 10mm; border:0; box-shadow:none;
- break-after:page; page-break-after:always;
- -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  --print-font: 11.5pt;
+  --print-photo: 80mm;
+  --print-pad: 3mm;
+
+  box-sizing: border-box;
+
+  width: 210mm;
+  max-width: none;
+
+  height: 297mm;
+  min-height: 297mm;
+
+  margin: 0;
+  padding: 12mm 12mm 10mm;
+
+  border: 0;
+  box-shadow: none;
+
+  break-after: page;
+  page-break-after: always;
+
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
-.cb-print-only .cb-a4-page:last-child { break-after:auto; page-break-after:auto; }
-.cb-print-only .cb-case-head { margin-bottom:4mm; }
-.cb-print-only .cb-case-head > span { font-size:11pt; }
-.cb-print-only .cb-case-head h1 { font-size:18pt; line-height:1.35; }
-.cb-print-only .cb-table-row { grid-template-columns:28mm minmax(0,1fr); }
-.cb-print-only .cb-table-label { min-height:0; padding:var(--print-pad) 2mm; font-size:var(--print-font); line-height:1.45; }
-.cb-print-only .cb-table-content { padding:var(--print-pad) 3mm; font-size:var(--print-font); line-height:1.5; }
-.cb-print-only .cb-table-content p { margin-bottom:1mm; }
-.cb-print-only .cb-table-content p:last-child { margin-bottom:0; }
-.cb-print-only .cb-preview-photos.two { grid-template-columns:1fr 1fr; }
-.cb-print-only .cb-preview-photos img { width:100%; height:var(--print-photo); max-height:var(--print-photo); object-fit:contain; }
-.cb-print-only .cb-photo-placeholder { min-height:22mm; }
-.cb-print-only .cb-photo-area { gap:2mm; }
-.cb-print-only .cb-photo-copy { font-size:var(--print-font); line-height:1.4; }
-.cb-print-only .cb-photo-copy small { font-size:9pt; margin-top:1mm; }
-.cb-print-only .cb-page-footer { font-size:9pt; margin-top:4mm; padding-top:2mm; }
+
+.cb-print-only .cb-a4-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* 제목 */
+.cb-print-only .cb-case-head {
+  margin-bottom: 4mm;
+}
+
+.cb-print-only .cb-case-head > span {
+  font-size: 11pt;
+}
+
+.cb-print-only .cb-case-head h1 {
+  font-size: 18pt;
+  line-height: 1.35;
+}
+
+/* 표 */
+.cb-print-only .cb-table-row {
+  grid-template-columns: 28mm minmax(0, 1fr);
+}
+
+/* 표 왼쪽 항목 */
+.cb-print-only .cb-table-label {
+  min-height: 0;
+
+  padding: var(--print-pad) 2mm;
+
+  font-size: var(--print-font);
+  line-height: 1.45;
+}
+
+/* 표 오른쪽 내용 */
+.cb-print-only .cb-table-content {
+  padding: var(--print-pad) 3mm;
+
+  font-size: var(--print-font);
+  line-height: 1.5;
+}
+
+.cb-print-only .cb-table-content p {
+  margin-bottom: 1mm;
+}
+
+.cb-print-only .cb-table-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   사진 1장 출력
+   ============================================ */
+
+.cb-print-only .cb-preview-photos.one {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+
+  align-items: center;
+  justify-items: center;
+
+  gap: 0;
+}
+
+/* ============================================
+   사진 2장 출력
+   ============================================ */
+
+.cb-print-only .cb-preview-photos.two {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  align-items: center;
+  justify-items: center;
+
+  gap: 3mm;
+}
+
+/* ============================================
+   사진 공통 설정
+   ============================================ */
+
+.cb-print-only .cb-preview-photos img {
+  display: block;
+
+  width: 100%;
+  height: var(--print-photo);
+  max-height: var(--print-photo);
+
+  /* 사진 원본 비율 유지 */
+  object-fit: contain;
+  object-position: center;
+
+  margin: 0 auto;
+
+  background: #fff;
+
+  border: none;
+  border-radius: 0;
+}
+
+/* 사진 없는 사례 */
+.cb-print-only .cb-photo-placeholder {
+  min-height: 22mm;
+}
+
+/* 사진 및 설명 간격 */
+.cb-print-only .cb-photo-area {
+  gap: 2mm;
+}
+
+/* 사진 설명 */
+.cb-print-only .cb-photo-copy {
+  font-size: var(--print-font);
+  line-height: 1.4;
+}
+
+.cb-print-only .cb-photo-copy small {
+  font-size: 9pt;
+  margin-top: 1mm;
+}
+
+/* 하단 기관명 및 페이지 번호 */
+.cb-print-only .cb-page-footer {
+  font-size: 9pt;
+  margin-top: 4mm;
+  padding-top: 2mm;
+}
+
+/* ============================================
+   실제 인쇄 설정
+   ============================================ */
+
 @media print {
- @page { size:A4 portrait; margin:0; }
- body:has(> .cb-print-only) > :not(.cb-print-only) { display:none !important; }
- body:has(> .cb-print-only) { margin:0; padding:0; }
- .cb-print-only { position:static; display:block !important; width:210mm; }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body:has(> .cb-print-only) > :not(.cb-print-only) {
+    display: none !important;
+  }
+
+  body:has(> .cb-print-only) {
+    margin: 0;
+    padding: 0;
+  }
+
+  .cb-print-only {
+    position: static;
+    display: block !important;
+    width: 210mm;
+  }
 }
+
 .cb-import table { width:100%; border-collapse:collapse; }
 .cb-import th,.cb-import td { border:1px solid #dce3ee; text-align:left; padding:8px; }
