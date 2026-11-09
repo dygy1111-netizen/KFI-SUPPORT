@@ -1,3 +1,4 @@
+import { prepareCasebookPrint } from '../lib/casebookPrint';
 import { createPortal } from "react-dom";
 import {
   useEffect,
@@ -649,9 +650,7 @@ export function CasebookManager({
       await document.fonts.ready;
       const pages = Array.from(document.querySelectorAll<HTMLElement>('.cb-print-only .cb-a4-page'));
       try {
-        await Promise.all(pages.flatMap(page => Array.from(page.querySelectorAll('img')).map(img => Promise.race([img.decode(), new Promise((_, reject) => setTimeout(() => reject(new Error('사진 불러오기 시간 초과')), 10000))]))));
-        const oversized = pages.map((page,index) => page.scrollHeight > 1123 ? index+1 : 0).filter(Boolean);
-        if (oversized.length) throw new Error(`A4 분량 초과: 출력 ${oversized.join(', ')}쪽. 문안을 줄인 뒤 다시 출력하세요.`);
+        await prepareCasebookPrint(pages);
         window.print();
       } catch(error) {
         notify(error instanceof Error ? error.message : '출력을 준비하지 못했습니다.', true);
@@ -1277,7 +1276,7 @@ export function CasebookPage({
     <article className="cb-a4-page">
       <header className="cb-case-head">
         <span>
-          [사례 {String(item.case_no || 0).padStart(2, "0")}] {casebookGroup(item.inspection_type)} ·{" "}
+          {casebookGroup(item.inspection_type)} ·{" "}
           {item.inspection_type || "검사구분"}
         </span>
 
@@ -1360,7 +1359,7 @@ export function CasebookPage({
           </div>
         </CaseRow>
 
-        <CaseRow label={"개선\n조치"}>
+        <CaseRow label="개선조치">
           <div className="cb-copy" ref={refs?.action}>
             {splitLines(item.action_body).map(
               (line, index) => (

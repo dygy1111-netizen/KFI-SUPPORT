@@ -1140,239 +1140,58 @@
     margin-bottom 0.18s ease;
 }
 
-/* 기본은 모니터에 들어오기 쉽게 약간 축소 */
-.public-casebook-zoom-wrap.zoom-normal {
-  transform: scale(0.78);
-  margin-bottom: -235px;
+
+/* Screen uses readable type and natural flow instead of shrinking the page. */
+.public-casebook-zoom-wrap { transform:none; margin-bottom:0; }
+.public-casebook-zoom-wrap.zoom-small { --case-font:17px; }
+.public-casebook-zoom-wrap.zoom-normal { --case-font:19px; }
+.public-casebook-zoom-wrap.zoom-large { --case-font:22px; }
+.content-section .cb-a4-page .cb-table-content,
+.content-section .cb-a4-page .cb-table-label { font-size:var(--case-font,18px); line-height:1.65; }
+.cb-table-label span { white-space:nowrap; }
+.content-section .cb-a4-page .cb-case-head > span { font-size:18px; }
+.content-section .cb-a4-page .cb-case-head h1 { font-size:32px; }
+.content-section .cb-a4-page .cb-photo-copy { font-size:17px; }
+.content-section .cb-a4-page .cb-photo-copy small { font-size:15px; }
+.content-section .cb-a4-page .cb-page-footer { font-size:14px; }
+.case-card .case-copy h3 { font-size:1.3rem; }
+.case-card .case-copy p { font-size:1.05rem; }
+@media (max-width:720px) {
+ .public-casebook-toolbar { align-items:stretch; flex-direction:column; }
+ .public-casebook-zoom { justify-content:center; }
+ .public-casebook-zoom-wrap.zoom-small { --case-font:15px; }
+ .public-casebook-zoom-wrap.zoom-normal { --case-font:16px; }
+ .public-casebook-zoom-wrap.zoom-large { --case-font:18px; }
+ .content-section .cb-a4-page .cb-case-head h1 { font-size:26px; }
+ .cb-table-row { grid-template-columns:88px minmax(0,1fr); }
 }
-
-/* 더 작게 */
-.public-casebook-zoom-wrap.zoom-small {
-  transform: scale(0.66);
-  margin-bottom: -365px;
-}
-
-/* 눈이 불편한 사용자를 위한 크게 보기 */
-.public-casebook-zoom-wrap.zoom-large {
-  transform: scale(1);
-  margin-bottom: 0;
-}
-
-/* 작은 높이의 노트북 */
-@media (max-height: 850px) and (min-width: 721px) {
-  .public-casebook-zoom-wrap.zoom-normal {
-    transform: scale(0.7);
-    margin-bottom: -325px;
-  }
-
-  .public-casebook-zoom-wrap.zoom-small {
-    transform: scale(0.6);
-    margin-bottom: -430px;
-  }
-}
-
-/* 모바일에서는 transform 대신 일반 크기로 표시 */
-@media (max-width: 720px) {
-  .public-casebook-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .public-casebook-zoom {
-    justify-content: center;
-  }
-
-  .public-casebook-zoom-wrap.zoom-small,
-  .public-casebook-zoom-wrap.zoom-normal,
-  .public-casebook-zoom-wrap.zoom-large {
-    transform: none;
-    margin-bottom: 0;
-  }
-
-  .public-casebook-zoom-wrap.zoom-small .cb-a4-page {
-    font-size: 0.9em;
-  }
-
-  .public-casebook-zoom-wrap.zoom-normal .cb-a4-page {
-    font-size: 1em;
-  }
-
-  .public-casebook-zoom-wrap.zoom-large .cb-a4-page {
-    font-size: 1.12em;
-  }
-}
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  .cb-print-only,
-  .cb-print-only * {
-    visibility: visible !important;
-  }
-
-  .cb-print-only {
-    display: block !important;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-  }
-
-  .cb-print-only .cb-a4-page {
-    width: 210mm;
-    max-width: none;
-    min-height: 297mm;
-    margin: 0;
-    padding: 12mm 12mm 9mm;
-    border: 0;
-    box-shadow: none;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .cb-print-only .cb-a4-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
-  }
-
-  .cb-print-only .cb-case-head > span {
-    font-size: 10.5pt;
-  }
-
-  .cb-print-only .cb-case-head h1 {
-    font-size: 17pt;
-  }
-
-  .cb-print-only .cb-table-row {
-    grid-template-columns: 30mm minmax(0, 1fr);
-  }
-
-  .cb-print-only .cb-table-label {
-    font-size: 9.5pt;
-    line-height: 1.45;
-  }
-
-  .cb-print-only .cb-table-content {
-    font-size: 9.5pt;
-    line-height: 1.52;
-    padding: 3mm 3.5mm;
-  }
-
-  /* PDF에서도 절대 자르지 않음 */
-  .cb-print-only .cb-preview-photos img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 72mm;
-    object-fit: contain;
-    object-position: center;
-  }
-
-  .cb-print-only .cb-preview-photos.two {
-    align-items: start;
-  }
-
-  .cb-print-only .cb-photo-placeholder {
-    min-height: 55mm;
-  }
-
-  .cb-print-only .cb-photo-copy {
-    font-size: 9pt;
-  }
-
-  .cb-print-only .cb-photo-copy small {
-    font-size: 8pt;
-  }
-
-  .cb-print-only .cb-page-footer {
-    font-size: 8.5pt;
-  }
-}
-
-/* Off-screen preflight uses exactly the print geometry. */
+/* Measurement and print share exactly the same A4 geometry. */
 .cb-print-only { display:block; position:fixed; left:-10000px; top:0; width:210mm; }
-  .cb-print-only .cb-a4-page {
-    width: 210mm;
-    max-width: none;
-    min-height: 297mm;
-    margin: 0;
-    padding: 12mm 12mm 9mm;
-    border: 0;
-    box-shadow: none;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .cb-print-only .cb-a4-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
-  }
-
-  .cb-print-only .cb-case-head > span {
-    font-size: 10.5pt;
-  }
-
-  .cb-print-only .cb-case-head h1 {
-    font-size: 17pt;
-  }
-
-  .cb-print-only .cb-table-row {
-    grid-template-columns: 30mm minmax(0, 1fr);
-  }
-
-  .cb-print-only .cb-table-label {
-    font-size: 9.5pt;
-    line-height: 1.45;
-  }
-
-  .cb-print-only .cb-table-content {
-    font-size: 9.5pt;
-    line-height: 1.52;
-    padding: 3mm 3.5mm;
-  }
-
-  /* PDF에서도 절대 자르지 않음 */
-  .cb-print-only .cb-preview-photos img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 72mm;
-    object-fit: contain;
-    object-position: center;
-  }
-
-  .cb-print-only .cb-preview-photos.two {
-    align-items: start;
-  }
-
-  .cb-print-only .cb-photo-placeholder {
-    min-height: 55mm;
-  }
-
-  .cb-print-only .cb-photo-copy {
-    font-size: 9pt;
-  }
-
-  .cb-print-only .cb-photo-copy small {
-    font-size: 8pt;
-  }
-
-  .cb-print-only .cb-page-footer {
-    font-size: 8.5pt;
-  }
-
-.cb-print-only .cb-a4-page { box-sizing:border-box; height:297mm; min-height:297mm; overflow:visible; }
+.cb-print-only .cb-a4-page {
+ --print-font:11.5pt; --print-photo:68mm; --print-pad:3mm;
+ box-sizing:border-box; width:210mm; max-width:none; height:297mm; min-height:297mm;
+ margin:0; padding:12mm 12mm 10mm; border:0; box-shadow:none;
+ break-after:page; page-break-after:always;
+ -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.cb-print-only .cb-a4-page:last-child { break-after:auto; page-break-after:auto; }
+.cb-print-only .cb-case-head { margin-bottom:4mm; }
+.cb-print-only .cb-case-head > span { font-size:11pt; }
+.cb-print-only .cb-case-head h1 { font-size:18pt; line-height:1.35; }
+.cb-print-only .cb-table-row { grid-template-columns:28mm minmax(0,1fr); }
+.cb-print-only .cb-table-label { min-height:0; padding:var(--print-pad) 2mm; font-size:var(--print-font); line-height:1.45; }
+.cb-print-only .cb-table-content { padding:var(--print-pad) 3mm; font-size:var(--print-font); line-height:1.5; }
+.cb-print-only .cb-table-content p { margin-bottom:1mm; }
+.cb-print-only .cb-table-content p:last-child { margin-bottom:0; }
 .cb-print-only .cb-preview-photos.two { grid-template-columns:1fr 1fr; }
-.cb-print-only .cb-preview-photos.one img { height:72mm; max-height:72mm; }
-.cb-print-only .cb-preview-photos.two img { height:58mm; max-height:58mm; }
-.cb-print-only .cb-table-label { min-height:0; padding:3mm 2mm; }
-.cb-print-only .cb-a4-page { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.cb-print-only .cb-preview-photos img { width:100%; height:var(--print-photo); max-height:var(--print-photo); object-fit:contain; }
+.cb-print-only .cb-photo-placeholder { min-height:22mm; }
+.cb-print-only .cb-photo-area { gap:2mm; }
+.cb-print-only .cb-photo-copy { font-size:var(--print-font); line-height:1.4; }
+.cb-print-only .cb-photo-copy small { font-size:9pt; margin-top:1mm; }
+.cb-print-only .cb-page-footer { font-size:9pt; margin-top:4mm; padding-top:2mm; }
 @media print {
+ @page { size:A4 portrait; margin:0; }
  body:has(> .cb-print-only) > :not(.cb-print-only) { display:none !important; }
  body:has(> .cb-print-only) { margin:0; padding:0; }
  .cb-print-only { position:static; display:block !important; width:210mm; }

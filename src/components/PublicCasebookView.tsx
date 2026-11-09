@@ -1,3 +1,4 @@
+import { prepareCasebookPrint } from '../lib/casebookPrint';
 import {
   useEffect,
   useMemo,
@@ -269,22 +270,10 @@ export function PublicCasebookView({
         ),
       );
 
-      await Promise.allSettled(
-        pages.flatMap((page) =>
-          Array.from(page.querySelectorAll("img")).map((image) =>
-            image.decode(),
-          ),
-        ),
-      );
-
-      const oversized = pages
-        .map((page, index) => (page.scrollHeight > 1123 ? index + 1 : 0))
-        .filter(Boolean);
-
-      if (oversized.length) {
-        setError(
-          `A4 분량을 초과한 사례가 있습니다: ${oversized.join(", ")}쪽`,
-        );
+      try {
+        await prepareCasebookPrint(pages);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "출력을 준비하지 못했습니다.");
         setPrintItems([]);
         if (originalTitle.current !== null) {
           document.title = originalTitle.current;
@@ -645,9 +634,6 @@ export function PublicCasebookView({
                     </div>
 
                     <div className="case-copy">
-                      <span>
-                        CASE {String(item.case_no).padStart(2, "0")}
-                      </span>
 
                       <h3>{item.title}</h3>
 
