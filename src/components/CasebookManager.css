@@ -1,3 +1,4 @@
+
 .cb-manager {
   display: grid;
   gap: 22px;
@@ -348,6 +349,7 @@
   top: 0;
   z-index: 4;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 7px;
@@ -493,7 +495,7 @@
   grid-template-columns: 1fr 1fr;
 }
 
-/* 핵심: 사진은 절대 자르지 않음 */
+/* 사진 원본 비율 유지 */
 .cb-preview-photos img {
   display: block;
   width: 100%;
@@ -505,13 +507,11 @@
   border-radius: 4px;
 }
 
-/* 사진 1장 */
 .cb-preview-photos.one img {
   max-width: 100%;
   margin: 0 auto;
 }
 
-/* 사진 2장 */
 .cb-preview-photos.two img {
   height: 260px;
   max-width: 100%;
@@ -1078,10 +1078,8 @@
     font-size: 12px;
   }
 }
-/* =======================================
-   외부 품질사례 상세 확대 / 축소
-   ======================================= */
 
+/* 외부 품질사례 상세 확대 / 축소 */
 .public-casebook-toolbar {
   max-width: 920px;
   margin: 0 auto 12px;
@@ -1140,37 +1138,97 @@
     margin-bottom 0.18s ease;
 }
 
+/* 일반 화면은 문안 가독성을 우선 */
+.public-casebook-zoom-wrap {
+  transform: none;
+  margin-bottom: 0;
+}
 
-/* Screen uses readable type and natural flow instead of shrinking the page. */
-.public-casebook-zoom-wrap { transform:none; margin-bottom:0; }
-.public-casebook-zoom-wrap.zoom-small { --case-font:17px; }
-.public-casebook-zoom-wrap.zoom-normal { --case-font:19px; }
-.public-casebook-zoom-wrap.zoom-large { --case-font:22px; }
+.public-casebook-zoom-wrap.zoom-small {
+  --case-font: 17px;
+}
+
+.public-casebook-zoom-wrap.zoom-normal {
+  --case-font: 19px;
+}
+
+.public-casebook-zoom-wrap.zoom-large {
+  --case-font: 22px;
+}
+
 .content-section .cb-a4-page .cb-table-content,
-.content-section .cb-a4-page .cb-table-label { font-size:var(--case-font,18px); line-height:1.65; }
-.cb-table-label span { white-space:nowrap; }
-.content-section .cb-a4-page .cb-case-head > span { font-size:18px; }
-.content-section .cb-a4-page .cb-case-head h1 { font-size:32px; }
-.content-section .cb-a4-page .cb-photo-copy { font-size:17px; }
-.content-section .cb-a4-page .cb-photo-copy small { font-size:15px; }
-.content-section .cb-a4-page .cb-page-footer { font-size:14px; }
-.case-card .case-copy h3 { font-size:1.3rem; }
-.case-card .case-copy p { font-size:1.05rem; }
-@media (max-width:720px) {
- .public-casebook-toolbar { align-items:stretch; flex-direction:column; }
- .public-casebook-zoom { justify-content:center; }
- .public-casebook-zoom-wrap.zoom-small { --case-font:15px; }
- .public-casebook-zoom-wrap.zoom-normal { --case-font:16px; }
- .public-casebook-zoom-wrap.zoom-large { --case-font:18px; }
- .content-section .cb-a4-page .cb-case-head h1 { font-size:26px; }
- .cb-table-row { grid-template-columns:88px minmax(0,1fr); }
+.content-section .cb-a4-page .cb-table-label {
+  font-size: var(--case-font, 18px);
+  line-height: 1.65;
+}
+
+.cb-table-label span {
+  white-space: nowrap;
+}
+
+.content-section .cb-a4-page .cb-case-head > span {
+  font-size: 18px;
+}
+
+.content-section .cb-a4-page .cb-case-head h1 {
+  font-size: 32px;
+}
+
+.content-section .cb-a4-page .cb-photo-copy {
+  font-size: 17px;
+}
+
+.content-section .cb-a4-page .cb-photo-copy small {
+  font-size: 15px;
+}
+
+.content-section .cb-a4-page .cb-page-footer {
+  font-size: 14px;
+}
+
+.case-card .case-copy h3 {
+  font-size: 1.3rem;
+}
+
+.case-card .case-copy p {
+  font-size: 1.05rem;
+}
+
+@media (max-width: 720px) {
+  .public-casebook-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .public-casebook-zoom {
+    justify-content: center;
+  }
+
+  .public-casebook-zoom-wrap.zoom-small {
+    --case-font: 15px;
+  }
+
+  .public-casebook-zoom-wrap.zoom-normal {
+    --case-font: 16px;
+  }
+
+  .public-casebook-zoom-wrap.zoom-large {
+    --case-font: 18px;
+  }
+
+  .content-section .cb-a4-page .cb-case-head h1 {
+    font-size: 26px;
+  }
+
+  .cb-table-row {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
 }
 
 /* ============================================
    KFI 품질관리 사례집 A4 PDF 출력 전용 스타일
    ============================================ */
 
-/* 화면에 보이지 않는 PDF 출력 영역 */
 .cb-print-only {
   display: block;
   position: fixed;
@@ -1179,17 +1237,14 @@
   width: 210mm;
 }
 
-/* A4 용지 */
 .cb-print-only .cb-a4-page {
   --print-font: 11.5pt;
   --print-photo: 80mm;
   --print-pad: 3mm;
 
   box-sizing: border-box;
-
   width: 210mm;
   max-width: none;
-
   height: 297mm;
   min-height: 297mm;
 
@@ -1211,7 +1266,6 @@
   page-break-after: auto;
 }
 
-/* 제목 */
 .cb-print-only .cb-case-head {
   margin-bottom: 4mm;
 }
@@ -1225,25 +1279,19 @@
   line-height: 1.35;
 }
 
-/* 표 */
 .cb-print-only .cb-table-row {
   grid-template-columns: 28mm minmax(0, 1fr);
 }
 
-/* 표 왼쪽 항목 */
 .cb-print-only .cb-table-label {
   min-height: 0;
-
   padding: var(--print-pad) 2mm;
-
   font-size: var(--print-font);
   line-height: 1.45;
 }
 
-/* 표 오른쪽 내용 */
 .cb-print-only .cb-table-content {
   padding: var(--print-pad) 3mm;
-
   font-size: var(--print-font);
   line-height: 1.5;
 }
@@ -1256,70 +1304,46 @@
   margin-bottom: 0;
 }
 
-/* ============================================
-   사진 1장 출력
-   ============================================ */
-
+/* 사진 1장 */
 .cb-print-only .cb-preview-photos.one {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-
   align-items: center;
   justify-items: center;
-
   gap: 0;
 }
 
-/* ============================================
-   사진 2장 출력
-   ============================================ */
-
+/* 사진 2장 */
 .cb-print-only .cb-preview-photos.two {
   display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-
   gap: 3mm;
 }
 
-/* ============================================
-   사진 공통 설정
-   ============================================ */
-
+/* 사진 크기 자동 조절 */
 .cb-print-only .cb-preview-photos img {
   display: block;
-
   width: 100%;
   height: var(--print-photo);
   max-height: var(--print-photo);
-
-  /* 사진 원본 비율 유지 */
   object-fit: contain;
   object-position: center;
-
   margin: 0 auto;
-
   background: #fff;
-
   border: none;
   border-radius: 0;
 }
 
-/* 사진 없는 사례 */
 .cb-print-only .cb-photo-placeholder {
   min-height: 22mm;
 }
 
-/* 사진 및 설명 간격 */
 .cb-print-only .cb-photo-area {
   gap: 2mm;
 }
 
-/* 사진 설명 */
 .cb-print-only .cb-photo-copy {
   font-size: var(--print-font);
   line-height: 1.4;
@@ -1330,17 +1354,13 @@
   margin-top: 1mm;
 }
 
-/* 하단 기관명 및 페이지 번호 */
 .cb-print-only .cb-page-footer {
   font-size: 9pt;
   margin-top: 4mm;
   padding-top: 2mm;
 }
 
-/* ============================================
-   실제 인쇄 설정
-   ============================================ */
-
+/* 실제 PDF 인쇄 설정 */
 @media print {
   @page {
     size: A4 portrait;
@@ -1363,5 +1383,14 @@
   }
 }
 
-.cb-import table { width:100%; border-collapse:collapse; }
-.cb-import th,.cb-import td { border:1px solid #dce3ee; text-align:left; padding:8px; }
+.cb-import table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cb-import th,
+.cb-import td {
+  border: 1px solid #dce3ee;
+  text-align: left;
+  padding: 8px;
+}
