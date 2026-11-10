@@ -139,6 +139,15 @@ function ensurePrintStyle() {
     .cb-print-only .cb-photo-area { gap: 1mm; }
     .cb-print-only .cb-photo-copy:empty { display: none; }
 
+    /* 검사기준의 굵은 항목만 한 줄 표시하고, 넘치면 JS가 글씨 폭을 조절합니다. */
+    .cb-print-only[data-print-mode="reviewed"]
+    .cb-standard-copy > p.cb-strong {
+      white-space: nowrap;
+      letter-spacing: -0.02em;
+      overflow: visible;
+      transform-origin: left center;
+    }
+
     .cb-print-only .cb-table-content p { margin-bottom: 1mm; }
     .cb-print-only .cb-table-content p:last-child { margin-bottom: 0; }
   `;
@@ -162,6 +171,62 @@ async function waitForPhoto(img: HTMLImageElement): Promise<void> {
   }
 }
 
+/**
+ * 검토완료 사례 PDF의 검사기준 제목(굵은 글씨)만 한 줄에 맞춤.
+ *
+ * 1. 기본 글씨 크기 유지 시도
+ * 2. 공간이 부족하면 최대 10pt까지 축소
+ * 3. 그래도 긴 문장은 가로 폭만 압축하여 잘림·줄바꿈 방지
+ *
+ * 일반 검사기준 본문과 다른 표 항목에는 적용하지 않습니다.
+ */
+function fitStandardBoldLines(page: HTMLElement): void {
+  if (!page.closest('.cb-print-only[data-print-mode="reviewed"]')) return;
+
+  const headings = page.querySelectorAll<HTMLElement>(
+    ".cb-standard-copy > p.cb-strong",
+  );
+
+  headings.forEach((line) => {
+    // 크기 조정 재계산 전 기존 인라인 값을 초기화합니다.
+    line.style.fontSize = "";
+    line.style.transform = "";
+    line.style.transformOrigin = "left center";
+    line.style.whiteSpace = "nowrap";
+    line.style.letterSpacing = "-0.02em";
+
+    const available = line.clientWidth;
+    if (available <= 0 || line.scrollWidth <= available + 1) return;
+
+    const computedPx = Number.parseFloat(getComputedStyle(line).fontSize);
+    if (!Number.isFinite(computedPx) || computedPx <= 0) return;
+
+    const basePt = computedPx * 72 / 96;
+    const minPt = Math.min(basePt, 10);
+
+    line.style.fontSize = minPt.toFixed(2) + "pt";
+
+    if (line.scrollWidth <= available + 1) {
+      let low = minPt;
+      let high = basePt;
+
+      for (let i = 0; i < 10; i++) {
+        const mid = (low + high) / 2;
+        line.style.fontSize = mid.toFixed(3) + "pt";
+        if (line.scrollWidth <= available + 1) low = mid;
+        else high = mid;
+      }
+
+      line.style.fontSize = Math.max(minPt, low - 0.1).toFixed(2) + "pt";
+    } else {
+      // 가장 긴 법령명도 가로로 잘리지 않게 마지막으로 폭만 조절합니다.
+      line.style.fontSize = minPt.toFixed(2) + "pt";
+      const ratio = Math.min(1, (available - 2) / line.scrollWidth);
+      line.style.transform = "scaleX(" + Math.max(0.1, ratio).toFixed(4) + ")";
+    }
+  });
+}
+
 /** 인쇄 너비는 210mm - 좌우 여백 12mm * 2 = 186mm. */
 function applyScale(
   page: HTMLElement,
@@ -170,7 +235,9 @@ function applyScale(
   padMm?: number,
 ) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
-  page.style.setProperty("--print-body-width", (186 / scale).toFixed(3) + "mm");
+  const oldWidth = page.style.getPropertyValue("--print-body-width");
+  const newWidth = (186 / scale).toFixed(3) + "mm";
+  page.style.setProperty("--print-body-width", newWidth);
   page.style.setProperty("--print-photo", photoMm.toFixed(2) + "mm");
 
   const reviewed = page.closest(
@@ -188,6 +255,8 @@ function applyScale(
     reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM
   );
   page.style.setProperty("--print-pad", effectivePad.toFixed(2) + "mm");
+  // 사진 높이 변경 시에는 반복 계산하지 않고, 인쇄 너비가 바뀔 때만 측정.
+  if (oldWidth !== newWidth) fitStandardBoldLines(page);
 }
 
 function fits(page: HTMLElement, target: FitTarget): boolean {
