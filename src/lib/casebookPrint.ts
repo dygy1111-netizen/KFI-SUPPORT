@@ -129,7 +129,7 @@ function applyScale(
   page: HTMLElement,
   scale: number,
   photoMm: number,
-  padMm = MIN_PRINT_PAD_MM,
+  padMm?: number,
 ) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
   page.style.setProperty("--print-body-width", (186 / scale).toFixed(3) + "mm");
@@ -146,7 +146,10 @@ function applyScale(
     : Math.max(11.5, 10 / scale);
 
   page.style.setProperty("--print-font", fontSize.toFixed(3) + "pt");
-  page.style.setProperty("--print-pad", padMm.toFixed(2) + "mm");
+  const effectivePad = padMm ?? (
+    reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM
+  );
+  page.style.setProperty("--print-pad", effectivePad.toFixed(2) + "mm");
 }
 
 function fits(page: HTMLElement, target: FitTarget): boolean {
