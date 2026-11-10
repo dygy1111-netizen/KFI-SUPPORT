@@ -51,23 +51,31 @@ function ensurePrintStyle() {
     }
 
     /*
-     * 검토완료 사례 PDF 표 테두리 통일.
-     * 표는 위·왼쪽, 각 셀은 오른쪽·아래쪽만 그려
-     * 겹치는 이중 선이 없도록 유지합니다.
-     * 인쇄용 확대/축소 비율과 관계없이 최종 선 굵기는 0.26mm로 일정합니다.
+     * 셀마다 CSS 테두리를 그리지 않습니다.
+     * 실제 PDF의 표 선은 A4 위에 얹는 단일 SVG 경로로만 그립니다.
+     * 이렇게 하면 페이지 축소와 소수점 반올림으로 선 굵기가 달라지는
+     * 현상을 줄일 수 있습니다.
      */
-    .cb-print-only[data-print-mode="reviewed"] .cb-table {
-      border: 0;
-      border-top: var(--print-rule-width, 0.26mm) solid #65758b;
-      border-left: var(--print-rule-width, 0.26mm) solid #65758b;
+    .cb-print-only[data-print-mode="reviewed"] .cb-table,
+    .cb-print-only[data-print-mode="reviewed"] .cb-table-label,
+    .cb-print-only[data-print-mode="reviewed"] .cb-table-content {
+      border: 0 !important;
     }
 
     .cb-print-only[data-print-mode="reviewed"] .cb-table-label,
     .cb-print-only[data-print-mode="reviewed"] .cb-table-content {
       box-sizing: border-box;
-      border: 0;
-      border-right: var(--print-rule-width, 0.26mm) solid #65758b;
-      border-bottom: var(--print-rule-width, 0.26mm) solid #65758b;
+    }
+
+    .cb-print-only[data-print-mode="reviewed"] .cb-print-table-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 210mm;
+      height: 297mm;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 2;
     }
 
     .cb-print-only .cb-table-content:has(.cb-photo-area) {
@@ -247,6 +255,82 @@ function fitStandardBoldLines(page: HTMLElement): void {
   });
 }
 
+/**
+ * '검토완료 사례 PDF'의 표 선을 하나의 벡터 SVG로 그립니다.
+ * CSS grid 선의 소수점 반올림 및 transform 축소를 피해,
+ * A4에서 모든 선을 실물 0.26mm 굵기로 동일하게 출력합니다.
+ *
+ * 이 SVG는 cb-print-body의 transform 밖에서 A4 용지 좌표를 사용합니다.
+ * 원본 표의 셀은 배경색과 텍스트만 담당합니다.
+ */
+function drawUniformTableLines(page: HTMLElement): void {
+  if (!page.closest('.cb-print-only[data-print-mode="reviewed"]')) return;
+
+  const table = page.querySelector<HTMLElement>(".cb-table");
+  if (!table) return;
+  const rows = Array.from(
+    table.querySelectorAll<HTMLElement>(":scope > .cb-table-row"),
+  );
+  if (!rows.length) return;
+
+  const firstLabel = rows[0].querySelector<HTMLElement>(".cb-table-label");
+  if (!firstLabel) return;
+
+  // print 미디어 적용 전후 어느 경우에도 mm 기반 좌표로 재측정합니다.
+  const pageRect = page.getBoundingClientRect();
+  const tableRect = table.getBoundingClientRect();
+  const labelRect = firstLabel.getBoundingClientRect();
+  if (pageRect.width <= 0 || pageRect.height <= 0) return;
+
+  const x = (value: number) =>
+    ((value - pageRect.left) * 210) / pageRect.width;
+  const y = (value: number) =>
+    ((value - pageRect.top) * 297) / pageRect.height;
+  const fmt = (value: number) => value.toFixed(4);
+
+  const left = fmt(x(tableRect.left));
+  const right = fmt(x(tableRect.right));
+  const top = fmt(y(tableRect.top));
+  const bottom = fmt(y(tableRect.bottom));
+  const divider = fmt(x(labelRect.right));
+
+  // 외곽선, 세로 구분선, 각 행 사이 가로 구분선을 한 번씩만 생성.
+  const segments = [
+    `M ${left} ${top} H ${right} V ${bottom} H ${left} Z`,
+    `M ${divider} ${top} V ${bottom}`,
+    ...rows.slice(0, -1).map(row =>
+      `M ${left} ${fmt(y(row.getBoundingClientRect().bottom))} H ${right}`,
+    ),
+  ];
+
+  const svgNs = "http://www.w3.org/2000/svg";
+  let overlay = page.querySelector<SVGSVGElement>(
+    ":scope > svg.cb-print-table-lines",
+  );
+  if (!overlay) {
+    overlay = document.createElementNS(svgNs, "svg");
+    overlay.classList.add("cb-print-table-lines");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.setAttribute("viewBox", "0 0 210 297");
+    overlay.setAttribute("width", "210mm");
+    overlay.setAttribute("height", "297mm");
+    page.appendChild(overlay);
+  }
+
+  let path = overlay.querySelector<SVGPathElement>("path");
+  if (!path) {
+    path = document.createElementNS(svgNs, "path");
+    overlay.appendChild(path);
+  }
+  path.setAttribute("d", segments.join(" "));
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "#65758b");
+  path.setAttribute("stroke-width", "0.26");
+  path.setAttribute("stroke-linejoin", "miter");
+  path.setAttribute("stroke-linecap", "butt");
+  path.setAttribute("shape-rendering", "geometricPrecision");
+}
+
 /** 인쇄 너비는 210mm - 좌우 여백 12mm * 2 = 186mm. */
 function applyScale(
   page: HTMLElement,
@@ -255,11 +339,6 @@ function applyScale(
   padMm?: number,
 ) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
-  // 역비례 보정: 페이지가 축소돼도 표의 최종 PDF 선 두께는 0.26mm.
-  page.style.setProperty(
-    "--print-rule-width",
-    (0.26 / scale).toFixed(4) + "mm",
-  );
   const oldWidth = page.style.getPropertyValue("--print-body-width");
   const newWidth = (186 / scale).toFixed(3) + "mm";
   page.style.setProperty("--print-body-width", newWidth);
@@ -453,4 +532,14 @@ export async function prepareCasebookPrint(
       "쪽. 해당 사례의 문안을 줄여주세요.",
     );
   }
+
+  // 레이아웃 확정 뒤 외곽선과 구분선을 그립니다.
+  pages.forEach(drawUniformTableLines);
+
+  // Chromium 인쇄 미디어에서 측정 좌표가 달라질 수 있어 인쇄 직전에 재계산.
+  window.addEventListener(
+    "beforeprint",
+    () => pages.filter(page => page.isConnected).forEach(drawUniformTableLines),
+    { once: true },
+  );
 }
