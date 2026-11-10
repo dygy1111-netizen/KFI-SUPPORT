@@ -8,14 +8,16 @@
 
 const SINGLE_PHOTO_MAX_MM = 80;
 const DOUBLE_PHOTO_MAX_MM = 58;
-const REVIEWED_SINGLE_PHOTO_MAX_MM = 115;
-const REVIEWED_DOUBLE_PHOTO_MAX_MM = 88;
+// 검토완료 사례 PDF 사진 높이: 종전 최대 높이의 70% (115×0.7, 88×0.7).
+const REVIEWED_SINGLE_PHOTO_MAX_MM = 80.5;
+const REVIEWED_DOUBLE_PHOTO_MAX_MM = 61.6;
 const PHOTO_MIN_MM = 20;
 const TARGET_CONTENT_RATIO = 0.75;
 // '품질사례 > 검토완료 사례 PDF'는 하단 약 13.5%를 남기는 것을 우선합니다.
 const REVIEWED_TARGET_CONTENT_RATIO = 0.865;
 const MIN_PRINT_PAD_MM = 2.1;
-const MAX_REVIEWED_PRINT_PAD_MM = 5.3;
+const MIN_REVIEWED_PRINT_PAD_MM = 2.7;
+const MAX_REVIEWED_PRINT_PAD_MM = 6.5;
 const EXTRA_BOTTOM_MM = 8;
 const PRINT_STYLE_ID = "kfi-casebook-scaled-print";
 
@@ -132,11 +134,18 @@ function applyScale(
   page.style.setProperty("--print-scale", scale.toFixed(4));
   page.style.setProperty("--print-body-width", (186 / scale).toFixed(3) + "mm");
   page.style.setProperty("--print-photo", photoMm.toFixed(2) + "mm");
-  // 실제 인쇄되는 표 본문은 최소 10pt 유지합니다.
-  page.style.setProperty(
-    "--print-font",
-    Math.max(11.5, 10 / scale).toFixed(3) + "pt",
-  );
+
+  const reviewed = page.closest(
+    '.cb-print-only[data-print-mode="reviewed"]',
+  ) !== null;
+
+  // 사진 높이를 줄인 만큼 검토완료 사례의 표 글씨를 키웁니다.
+  // 페이지 전체를 축소하더라도 최종 본문 크기는 약 11.25pt 이상으로 유지합니다.
+  const fontSize = reviewed
+    ? Math.max(12.5, 11.25 / scale)
+    : Math.max(11.5, 10 / scale);
+
+  page.style.setProperty("--print-font", fontSize.toFixed(3) + "pt");
   page.style.setProperty("--print-pad", padMm.toFixed(2) + "mm");
 }
 
@@ -202,7 +211,7 @@ function fillRemainingWithPadding(
   scale: number,
   photoMm: number,
 ) {
-  let low = MIN_PRINT_PAD_MM;
+  let low = MIN_REVIEWED_PRINT_PAD_MM;
   let high = MAX_REVIEWED_PRINT_PAD_MM;
 
   for (let i = 0; i < 12; i++) {
@@ -213,7 +222,7 @@ function fillRemainingWithPadding(
     else high = mid;
   }
 
-  applyScale(page, scale, photoMm, Math.max(MIN_PRINT_PAD_MM, low - 0.02));
+  applyScale(page, scale, photoMm, Math.max(MIN_REVIEWED_PRINT_PAD_MM, low - 0.02));
 }
 
 export async function prepareCasebookPrint(
@@ -252,15 +261,22 @@ export async function prepareCasebookPrint(
           ? (reviewed ? REVIEWED_DOUBLE_PHOTO_MAX_MM : DOUBLE_PHOTO_MAX_MM)
           : 0;
     const photoMin = count ? PHOTO_MIN_MM : 0;
+    const initialPad = reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM;
 
     let fitted = false;
 
     // 1순위: 검토완료 사례는 하단 약 13.5%, 기타 출력은 기존 25%를 우선합니다.
     for (const scale of scales) {
-      applyScale(page, scale, photoMin);
+      applyScale(page, scale, photoMin, initialPad);
       if (!fits(page, "quarter")) continue;
 
       maximizePhoto(page, scale, photoMin, photoMax, "quarter");
+      if (reviewed) {
+        page.style.setProperty(
+          "--print-pad",
+          MIN_REVIEWED_PRINT_PAD_MM.toFixed(2) + "mm",
+        );
+      }
 
       // 이미지에 빈 고정 상자를 만들지 않고 표의 상하 간격으로 남는 영역 조절
       if (reviewed && count > 0) {
@@ -277,10 +293,16 @@ export async function prepareCasebookPrint(
     // 내용이 매우 긴 경우에만 하단 여백을 양보합니다.
     if (!fitted) {
       for (const scale of scales) {
-        applyScale(page, scale, photoMin);
+        applyScale(page, scale, photoMin, initialPad);
         if (!fits(page, "page")) continue;
 
         maximizePhoto(page, scale, photoMin, photoMax, "page");
+        if (reviewed) {
+          page.style.setProperty(
+            "--print-pad",
+            MIN_REVIEWED_PRINT_PAD_MM.toFixed(2) + "mm",
+          );
+        }
         fitted = true;
         break;
       }
