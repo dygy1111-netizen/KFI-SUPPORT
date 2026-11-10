@@ -1274,6 +1274,7 @@ export function CasebookPage({
 
   return (
     <article className="cb-a4-page">
+      <div className="cb-print-body">
       <header className="cb-case-head">
         <span>
           {casebookGroup(item.inspection_type)} ·{" "}
@@ -1390,6 +1391,7 @@ export function CasebookPage({
           Page {pageNumber}
         </span>
       </footer>
+      </div>
     </article>
   );
 }
