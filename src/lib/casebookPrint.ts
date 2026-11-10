@@ -14,9 +14,11 @@
 
 const PHOTO_SINGLE_MAX = 80;
 const PHOTO_DOUBLE_MAX = 58;
-const PHOTO_MIN = 24;
+const PHOTO_MIN = 22;
 
 const EXTRA_BOTTOM_MARGIN = 8;
+// 사례의 본문과 쪽번호가 A4 상단 75% 안에 들도록 우선 배치
+const TARGET_CONTENT_RATIO = 0.75;
 
 const PRINT_STYLE_ID = "kfi-casebook-compact-print";
 
@@ -160,32 +162,34 @@ async function waitForImage(
 /**
  * 페이지 내용이 A4 영역 안에 들어가는지 확인
  */
-function pageFits(page: HTMLElement): boolean {
-  const footer = page.querySelector<HTMLElement>(
-    ".cb-page-footer",
-  );
+type FitTarget = "quarter" | "a4";
 
-  if (!footer) {
-    return false;
-  }
+function pageFits(page: HTMLElement, target: FitTarget): boolean {
+  const footer = page.querySelector<HTMLElement>(".cb-page-footer");
+  if (!footer) return false;
 
+  const pageRect = page.getBoundingClientRect();
   const pageStyle = window.getComputedStyle(page);
 
-  const pageBottom =
-    page.getBoundingClientRect().bottom -
+  // 긴 사례는 실제 A4 인쇄 가능 영역까지 허용합니다.
+  const safeBottom =
+    pageRect.bottom -
     parseFloat(pageStyle.paddingBottom) -
     (EXTRA_BOTTOM_MARGIN * 96) / 25.4;
 
-  const footerBottom =
-    footer.getBoundingClientRect().bottom;
+  // 가능하면 A4 하단 약 1/4을 비워 둡니다.
+  const quarterBottom =
+    pageRect.top + pageRect.height * TARGET_CONTENT_RATIO;
 
-  const widthFits =
-    page.scrollWidth <= page.clientWidth + 1;
+  const allowedBottom =
+    target === "quarter"
+      ? Math.min(quarterBottom, safeBottom)
+      : safeBottom;
 
-  const heightFits =
-    footerBottom <= pageBottom + 0.5;
-
-  return widthFits && heightFits;
+  return (
+    footer.getBoundingClientRect().bottom <= allowedBottom + 0.5 &&
+    page.scrollWidth <= page.clientWidth + 1
+  );
 }
 
 /**
@@ -195,44 +199,29 @@ function fitPhotoHeight(
   page: HTMLElement,
   minimum: number,
   maximum: number,
-): number {
+  target: FitTarget,
+): void {
   if (maximum <= 0) {
-    page.style.setProperty(
-      "--print-photo",
-      "0mm",
-    );
-    return 0;
+    page.style.setProperty("--print-photo", "0mm");
+    return;
   }
 
   let low = minimum;
   let high = maximum;
 
+  // 사진을 잘라내거나 늘리지 않고, 목표 영역에 들어가는 최대 높이 탐색
   for (let i = 0; i < 12; i++) {
     const middle = (low + high) / 2;
+    page.style.setProperty("--print-photo", middle.toFixed(2) + "mm");
 
-    page.style.setProperty(
-      "--print-photo",
-      `${middle}mm`,
-    );
-
-    if (pageFits(page)) {
-      low = middle;
-    } else {
-      high = middle;
-    }
+    if (pageFits(page, target)) low = middle;
+    else high = middle;
   }
-
-  const result = Math.max(
-    minimum,
-    low - 0.2,
-  );
 
   page.style.setProperty(
     "--print-photo",
-    `${result.toFixed(2)}mm`,
+    Math.max(minimum, low - 0.2).toFixed(2) + "mm",
   );
-
-  return result;
 }
 
 /**
@@ -263,78 +252,52 @@ export async function prepareCasebookPrint(
   const oversized: number[] = [];
 
   pages.forEach((page, index) => {
-    const count = page.querySelectorAll(
-      ".cb-preview-photos img",
-    ).length;
-
-    // 사진 수에 따른 최대 높이
+    const count = page.querySelectorAll(".cb-preview-photos img").length;
+    const minPhoto = count > 0 ? PHOTO_MIN : 0;
     const maxPhoto =
-      count === 1
-        ? PHOTO_SINGLE_MAX
-        : count >= 2
-          ? PHOTO_DOUBLE_MAX
-          : 0;
+      count === 1 ? PHOTO_SINGLE_MAX :
+      count >= 2 ? PHOTO_DOUBLE_MAX : 0;
 
-    const minPhoto =
-      count > 0 ? PHOTO_MIN : 0;
+    // 글씨를 무조건 줄이지 않고 사진과 셀 상하 간격부터 조절
+    const settings = [
+      { font: 11.5, pad: 2.4 },
+      { font: 11.25, pad: 2.0 },
+      { font: 11.0, pad: 1.7 },
+      { font: 10.5, pad: 1.4 },
+      { font: 10.0, pad: 1.2 },
+    ];
 
     let fitted = false;
 
-    /*
-     * 첫 단계에서 글자 크기와 셀 여백 유지
-     *
-     * 초과할 때만 조금씩 축소
-     */
-    for (let step = 0; step <= 6; step++) {
-      const fontSize =
-        11.5 - step * 0.25;
+    // 1차 목표: 표·사진·쪽번호가 A4 높이의 약 75% 안에 들어오게 조정
+    for (const setting of settings) {
+      page.style.setProperty("--print-font", setting.font + "pt");
+      page.style.setProperty("--print-pad", setting.pad + "mm");
+      page.style.setProperty("--print-photo", minPhoto + "mm");
 
-      const cellPadding =
-        2.4 - step * 0.1;
+      if (!pageFits(page, "quarter")) continue;
 
-      page.style.setProperty(
-        "--print-font",
-        `${fontSize}pt`,
-      );
-
-      page.style.setProperty(
-        "--print-pad",
-        `${cellPadding.toFixed(2)}mm`,
-      );
-
-      page.style.setProperty(
-        "--print-photo",
-        `${minPhoto}mm`,
-      );
-
-      if (!pageFits(page)) {
-        continue;
-      }
-
-      /*
-       * 페이지에 들어가는 범위에서
-       * 사진 크기만 자동 조정
-       */
-      fitPhotoHeight(
-        page,
-        minPhoto,
-        maxPhoto,
-      );
-
-      /*
-       * 남는 공간을 표 여백으로
-       * 다시 확대하지 않습니다.
-       *
-       * A4 하단에 여백이 남아도
-       * 현재 내용 높이를 유지합니다.
-       */
+      fitPhotoHeight(page, minPhoto, maxPhoto, "quarter");
       fitted = true;
       break;
     }
 
+    // 문안이 긴 사례는 임의로 잘라내지 않고 A4 한 쪽을 우선 보장
     if (!fitted) {
-      oversized.push(index + 1);
+      for (const setting of settings) {
+        page.style.setProperty("--print-font", setting.font + "pt");
+        page.style.setProperty("--print-pad", setting.pad + "mm");
+        page.style.setProperty("--print-photo", minPhoto + "mm");
+
+        if (!pageFits(page, "a4")) continue;
+
+        // 25% 여백 확보가 불가능한 사례는 사진을 최소한으로 유지
+        fitted = true;
+        break;
+      }
     }
+
+    if (!fitted) oversized.push(index + 1);
   });
 
   if (oversized.length > 0) {
