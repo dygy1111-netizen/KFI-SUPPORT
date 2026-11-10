@@ -81,6 +81,44 @@ function ensurePrintStyle() {
       gap: 2mm;
     }
 
+    /*
+     * 검토완료 사례 PDF만 사진칸의 좌우 내부 여백 축소.
+     * 표의 다른 칸에는 영향을 주지 않습니다.
+     */
+    .cb-print-only[data-print-mode="reviewed"]
+    .cb-table-content:has(.cb-photo-area) {
+      padding-left: 1mm;
+      padding-right: 1mm;
+    }
+
+    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos {
+      width: 100%;
+      gap: 2mm;
+    }
+
+    /*
+     * 사진 1장: 가용 사진칸 너비를 모두 사용.
+     * 사진 2장: 같은 크기의 두 프레임에 나란히 표시.
+     * 원본을 변형하지 않고 중앙 기준으로 가장자리만 일부 잘라냅니다.
+     */
+    .cb-print-only[data-print-mode="reviewed"]
+    .cb-preview-photos.one img,
+    .cb-print-only[data-print-mode="reviewed"]
+    .cb-preview-photos.two img {
+      box-sizing: border-box;
+      width: 100%;
+      height: var(--print-photo, 61.6mm);
+      min-width: 0;
+      min-height: 0;
+      max-width: 100%;
+      max-height: var(--print-photo, 61.6mm);
+      object-fit: cover;
+      object-position: center;
+      margin: 0;
+      background: transparent;
+      border: 0;
+    }
+
     /* 고정 높이 사진 상자를 사용하지 않아 원본 비율과 실제 높이가 일치합니다. */
     .cb-print-only .cb-preview-photos img {
       display: block;
