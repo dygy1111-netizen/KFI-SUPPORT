@@ -8,8 +8,14 @@
 
 const SINGLE_PHOTO_MAX_MM = 80;
 const DOUBLE_PHOTO_MAX_MM = 58;
+const REVIEWED_SINGLE_PHOTO_MAX_MM = 115;
+const REVIEWED_DOUBLE_PHOTO_MAX_MM = 88;
 const PHOTO_MIN_MM = 20;
 const TARGET_CONTENT_RATIO = 0.75;
+// '품질사례 > 검토완료 사례 PDF'는 하단 약 13.5%를 남기는 것을 우선합니다.
+const REVIEWED_TARGET_CONTENT_RATIO = 0.865;
+const MIN_PRINT_PAD_MM = 2.1;
+const MAX_REVIEWED_PRINT_PAD_MM = 5.3;
 const EXTRA_BOTTOM_MM = 8;
 const PRINT_STYLE_ID = "kfi-casebook-scaled-print";
 
@@ -63,6 +69,16 @@ function ensurePrintStyle() {
       gap: 2mm;
     }
 
+    /*
+     * 검토완료 사례 출력: 가로형/세로형 사진이 섞여도 원본을 자르지 않고
+     * 두 칸의 가운데에 각각 배치합니다.
+     * 세로형은 조금 높고 가로형은 조금 넓어 비슷한 면적으로 보입니다.
+     */
+    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos.two {
+      align-items: center;
+      gap: 2mm;
+    }
+
     /* 고정 높이 사진 상자를 사용하지 않아 원본 비율과 실제 높이가 일치합니다. */
     .cb-print-only .cb-preview-photos img {
       display: block;
@@ -107,7 +123,12 @@ async function waitForPhoto(img: HTMLImageElement): Promise<void> {
 }
 
 /** 인쇄 너비는 210mm - 좌우 여백 12mm * 2 = 186mm. */
-function applyScale(page: HTMLElement, scale: number, photoMm: number) {
+function applyScale(
+  page: HTMLElement,
+  scale: number,
+  photoMm: number,
+  padMm = MIN_PRINT_PAD_MM,
+) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
   page.style.setProperty("--print-body-width", (186 / scale).toFixed(3) + "mm");
   page.style.setProperty("--print-photo", photoMm.toFixed(2) + "mm");
@@ -116,7 +137,7 @@ function applyScale(page: HTMLElement, scale: number, photoMm: number) {
     "--print-font",
     Math.max(11.5, 10 / scale).toFixed(3) + "pt",
   );
-  page.style.setProperty("--print-pad", "2.1mm");
+  page.style.setProperty("--print-pad", padMm.toFixed(2) + "mm");
 }
 
 function fits(page: HTMLElement, target: FitTarget): boolean {
@@ -128,9 +149,16 @@ function fits(page: HTMLElement, target: FitTarget): boolean {
   const content = body.getBoundingClientRect();
   const footerRect = footer.getBoundingClientRect();
 
+  const reviewed = page.closest(
+    '.cb-print-only[data-print-mode="reviewed"]',
+  ) !== null;
+  const preferredRatio = reviewed
+    ? REVIEWED_TARGET_CONTENT_RATIO
+    : TARGET_CONTENT_RATIO;
+
   const availableBottom =
     target === "quarter"
-      ? paper.top + paper.height * TARGET_CONTENT_RATIO
+      ? paper.top + paper.height * preferredRatio
       : paper.bottom - ((10 + EXTRA_BOTTOM_MM) * 96) / 25.4;
 
   const rightLimit = paper.right - (12 * 96) / 25.4;
@@ -165,6 +193,29 @@ function maximizePhoto(
   applyScale(page, scale, Math.max(minMm, low - 0.1));
 }
 
+/**
+ * 검토완료 사례 PDF: 사진을 먼저 충분히 키운 다음,
+ * 셀 위아래 여백을 일정 범위에서 늘려 표가 지나치게 위에 몰리지 않게 합니다.
+ */
+function fillRemainingWithPadding(
+  page: HTMLElement,
+  scale: number,
+  photoMm: number,
+) {
+  let low = MIN_PRINT_PAD_MM;
+  let high = MAX_REVIEWED_PRINT_PAD_MM;
+
+  for (let i = 0; i < 12; i++) {
+    const mid = (low + high) / 2;
+    applyScale(page, scale, photoMm, mid);
+
+    if (fits(page, "quarter")) low = mid;
+    else high = mid;
+  }
+
+  applyScale(page, scale, photoMm, Math.max(MIN_PRINT_PAD_MM, low - 0.02));
+}
+
 export async function prepareCasebookPrint(
   pages: HTMLElement[],
 ): Promise<void> {
@@ -191,19 +242,34 @@ export async function prepareCasebookPrint(
 
   pages.forEach((page, index) => {
     const count = page.querySelectorAll(".cb-preview-photos img").length;
+    const reviewed = page.closest(
+      '.cb-print-only[data-print-mode="reviewed"]',
+    ) !== null;
     const photoMax =
-      count === 1 ? SINGLE_PHOTO_MAX_MM :
-      count >= 2 ? DOUBLE_PHOTO_MAX_MM : 0;
+      count === 1
+        ? (reviewed ? REVIEWED_SINGLE_PHOTO_MAX_MM : SINGLE_PHOTO_MAX_MM)
+        : count >= 2
+          ? (reviewed ? REVIEWED_DOUBLE_PHOTO_MAX_MM : DOUBLE_PHOTO_MAX_MM)
+          : 0;
     const photoMin = count ? PHOTO_MIN_MM : 0;
 
     let fitted = false;
 
-    // 1순위: A4 하단 약 25% 여백을 확보합니다.
+    // 1순위: 검토완료 사례는 하단 약 13.5%, 기타 출력은 기존 25%를 우선합니다.
     for (const scale of scales) {
       applyScale(page, scale, photoMin);
       if (!fits(page, "quarter")) continue;
 
       maximizePhoto(page, scale, photoMin, photoMax, "quarter");
+
+      // 이미지에 빈 고정 상자를 만들지 않고 표의 상하 간격으로 남는 영역 조절
+      if (reviewed && count > 0) {
+        const photoMm = Number.parseFloat(
+          page.style.getPropertyValue("--print-photo"),
+        );
+        fillRemainingWithPadding(page, scale, photoMm);
+      }
+
       fitted = true;
       break;
     }
