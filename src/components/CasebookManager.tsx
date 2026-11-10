@@ -1323,7 +1323,7 @@ export function CasebookPage({
         </CaseRow>
 
         <CaseRow label={"검사 기준\n(관련 법령)"}>
-          <div className="cb-copy" ref={refs?.standard}>
+          <div className="cb-copy cb-standard-copy" ref={refs?.standard}>
             {splitStandardLines(item.standard_title).map(
               (line, index) => (
                 <p className="cb-bullet cb-strong" key={`title-${index}`}>
