@@ -50,6 +50,26 @@ function ensurePrintStyle() {
       transform-origin: top left;
     }
 
+    /*
+     * 검토완료 사례 PDF 표 테두리 통일.
+     * 표는 위·왼쪽, 각 셀은 오른쪽·아래쪽만 그려
+     * 겹치는 이중 선이 없도록 유지합니다.
+     * 인쇄용 확대/축소 비율과 관계없이 최종 선 굵기는 0.26mm로 일정합니다.
+     */
+    .cb-print-only[data-print-mode="reviewed"] .cb-table {
+      border: 0;
+      border-top: var(--print-rule-width, 0.26mm) solid #65758b;
+      border-left: var(--print-rule-width, 0.26mm) solid #65758b;
+    }
+
+    .cb-print-only[data-print-mode="reviewed"] .cb-table-label,
+    .cb-print-only[data-print-mode="reviewed"] .cb-table-content {
+      box-sizing: border-box;
+      border: 0;
+      border-right: var(--print-rule-width, 0.26mm) solid #65758b;
+      border-bottom: var(--print-rule-width, 0.26mm) solid #65758b;
+    }
+
     .cb-print-only .cb-table-content:has(.cb-photo-area) {
       justify-content: flex-start;
       padding-top: 2mm;
@@ -235,6 +255,11 @@ function applyScale(
   padMm?: number,
 ) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
+  // 역비례 보정: 페이지가 축소돼도 표의 최종 PDF 선 두께는 0.26mm.
+  page.style.setProperty(
+    "--print-rule-width",
+    (0.26 / scale).toFixed(4) + "mm",
+  );
   const oldWidth = page.style.getPropertyValue("--print-body-width");
   const newWidth = (186 / scale).toFixed(3) + "mm";
   page.style.setProperty("--print-body-width", newWidth);
