@@ -264,13 +264,18 @@ export function PublicCasebookView({
     window.setTimeout(async () => {
       await document.fonts.ready;
 
+      // '품질사례 > 검토완료 사례 PDF'가 생성한 인쇄 페이지만 사용합니다.
+      const printRoot = document.querySelector<HTMLElement>(
+        '.cb-print-only[data-print-mode="reviewed"]',
+      );
       const pages = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          ".cb-print-only .cb-a4-page",
-        ),
+        printRoot?.querySelectorAll<HTMLElement>(".cb-a4-page") ?? [],
       );
 
       try {
+        if (pages.length !== targets.length) {
+          throw new Error("검토완료 사례 PDF 페이지를 준비하지 못했습니다.");
+        }
         await prepareCasebookPrint(pages);
       } catch (error) {
         setError(error instanceof Error ? error.message : "출력을 준비하지 못했습니다.");
@@ -325,7 +330,7 @@ export function PublicCasebookView({
 
       {printItems.length > 0 &&
         createPortal(
-          <div className="cb-print-only">
+          <div className="cb-print-only" data-print-mode="reviewed">
             {printItems.map((item, index) => (
               <CasebookPage
                 key={`public-print-${item.id}`}
