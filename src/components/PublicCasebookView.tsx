@@ -327,6 +327,11 @@ export function PublicCasebookView({
                 showList={false}
                 onClose={() => setEditing(null)}
                 onSaved={() => setRetry((current) => current + 1)}
+                onDeleted={() => {
+                  setEditing(null);
+                  setSelected(null);
+                  setRetry(current => current + 1);
+                }}
               />
             </div>
           </div>,
