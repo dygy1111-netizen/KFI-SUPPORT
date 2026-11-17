@@ -18,7 +18,7 @@ import {
 
 import "./CasebookManager.css";
 
-import { casebookGroup, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, PHOTO_SLOTS, type PhotoSlot, type CasebookCase } from "../lib/casebook";
+import { casebookGroup, compactCasebookProse, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, PHOTO_SLOTS, type PhotoSlot, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 import { CasebookTextUpdate } from "./CasebookTextUpdate";
@@ -559,9 +559,9 @@ export function CasebookManager({
         standard_title: draft.standard_title.trim(),
         standard_body: draft.standard_body.trim(),
         cause_title: draft.cause_title.trim(),
-        cause_body: draft.cause_body.trim(),
-        action_body: draft.action_body.trim(),
-        prevention_body: draft.prevention_body.trim(),
+        cause_body: compactCasebookProse(draft.cause_body.trim()),
+        action_body: compactCasebookProse(draft.action_body.trim()),
+        prevention_body: compactCasebookProse(draft.prevention_body.trim()),
         sort_order: Number(draft.sort_order) || Number(draft.case_no) || 1,
         updated_at: new Date().toISOString(),
       };
@@ -1503,15 +1503,29 @@ function ResizableCasePhoto({
   const slot = useRef<HTMLDivElement>(null);
   const drag = useRef<{startX: number; startStretch: number; slotWidth: number} | null>(null);
   return (
-    <div className="cb-photo-resize-slot" ref={slot}>
+    <div
+      className="cb-photo-resize-slot"
+      ref={slot}
+      style={{
+        "--photo-ratio": "1",
+        "--photo-stretch": photoHorizontalStretch(horizontalStretch) / 100,
+      } as React.CSSProperties}
+    >
       <div className="cb-photo-size-frame" style={{width: `${photoWidthPercent(percent)}%`}}>
         <img
           src={src}
           alt={alt}
+          onLoad={(event) => {
+            const img = event.currentTarget;
+            if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+              const ratio = img.naturalWidth / img.naturalHeight;
+              slot.current?.style.setProperty("--photo-ratio", ratio.toFixed(6));
+            }
+          }}
           style={{
-            width: "auto",
+            width: `${100 / (photoHorizontalStretch(horizontalStretch) / 100)}%`,
             height: "auto",
-            maxWidth: "100%",
+            maxWidth: "none",
             objectFit: "contain",
             transform: `scaleX(${photoHorizontalStretch(horizontalStretch) / 100})`,
             transformOrigin: "center center",
@@ -1656,13 +1670,13 @@ export function CasebookPage({
 
         <CaseRow label="발생 사유">
           <div className="cb-copy" ref={refs?.cause}>
-            {splitLines(item.cause_title).map((line, index) => (
+            {splitLines(compactCasebookProse(item.cause_title)).map((line, index) => (
               <p className="cb-bullet cb-strong" key={`title-${index}`}>
                 {line}
               </p>
             ))}
 
-            {splitLines(item.cause_body).map(
+            {splitLines(compactCasebookProse(item.cause_body)).map(
               (line, index) => (
                 <p className="cb-bullet" key={`body-${index}`}>
                   {line}
@@ -1674,7 +1688,7 @@ export function CasebookPage({
 
         <CaseRow label="개선조치">
           <div className="cb-copy" ref={refs?.action}>
-            {splitLines(item.action_body).map(
+            {splitLines(compactCasebookProse(item.action_body)).map(
               (line, index) => (
                 <p className="cb-bullet" key={index}>
                   {line}
@@ -1686,7 +1700,7 @@ export function CasebookPage({
 
         <CaseRow label="예방 대책">
           <div className="cb-copy" ref={refs?.prevention}>
-            {splitLines(item.prevention_body).map(
+            {splitLines(compactCasebookProse(item.prevention_body)).map(
               (line, index) => (
                 <p className="cb-bullet" key={index}>
                   {line}
