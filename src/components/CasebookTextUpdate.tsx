@@ -55,8 +55,11 @@ export function CasebookTextUpdate({
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [publishAll, setPublishAll] = useState(true);
   const current = new Map(items.filter(x => x.source_uid).map(x => [x.source_uid, x]));
   const missing = rows.filter(r => !current.has(r.source_uid));
+  const exactCaseCount = items.length === 146;
+  const allMatched = rows.length === 146 && missing.length === 0 && exactCaseCount;
   const different = rows.filter(r => {
     const found = current.get(r.source_uid);
     return found && (found.action_body !== r.action_body || found.prevention_body !== r.prevention_body);
@@ -66,11 +69,63 @@ export function CasebookTextUpdate({
     return found && r.title_reference && found.title !== r.title_reference;
   });
 
+  function downloadBackup() {
+    const snapshot = items.map(item => ({
+      source_uid: item.source_uid,
+      case_no: item.case_no,
+      title: item.title,
+      action_body: item.action_body,
+      prevention_body: item.prevention_body,
+      review_status: item.review_status,
+      published: item.published,
+      updated_at: item.updated_at,
+    }));
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type: "application/json"});
+    const backupUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = backupUrl;
+    link.download = "KFI_품질사례146건_문안및공개상태_변경전백업.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(backupUrl), 1000);
+  }
+
+  async function approveAll() {
+    if (disabled || busy || items.length !== 146) return;
+    if (!window.confirm("146건 전부 검토완료·공개로 변경합니다. 미검증 사례도 공개되니 반드시 확인하세요. 실행할까요?")) return;
+    downloadBackup();
+    setBusy(true);
+    setMessage("");
+    setError("");
+    try {
+      // Single SQL UPDATE statement: no photo or text fields are changed.
+      const {data, error: updateError} = await supabase
+        .from("casebook_cases")
+        .update({review_status: "검토완료", published: true, updated_at: new Date().toISOString()})
+        .in("id", items.map(item => item.id))
+        .select("id");
+      if (updateError) throw updateError;
+      if (data?.length !== 146) {
+        throw new Error(`변경 결과 ${data?.length ?? 0}건으로 확인됩니다. 새로고침하여 남은 사례를 검사하세요.`);
+      }
+      await onComplete();
+      setMessage("146건 전체 검토완료·공개 처리 완료. 사진과 문안은 변경하지 않았습니다.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "공개 상태를 바꾸지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function save() {
-    if (disabled || busy || rows.length !== 146 || missing.length !== 0) return;
+    if (disabled || busy || !allMatched) return;
     if (!window.confirm(
-      `146건의 개선조치·예방대책 문안만 갱신합니다. 현재 문안과 다른 ${different.length}건은 수정안으로 교체됩니다. 사진·순번·검사기준·검토상태·공개 여부는 유지됩니다. 적용할까요?`
+      publishAll
+        ? `146건 개선조치·예방대책을 갱신하고 전부 '검토완료·공개'로 설정합니다. 현재 문안과 다른 ${different.length}건이 교체되고, 비공개 사례도 공개됩니다. 법령·사진 확인이 끝나지 않은 사례가 포함되어 있으면 취소하세요. 적용할까요?`
+        : `146건 개선조치·예방대책 문안만 갱신합니다. 현재 문안과 다른 ${different.length}건이 교체되며 공개 상태는 유지됩니다. 적용할까요?`
     )) return;
+    downloadBackup();
     setBusy(true);
     setError("");
     setMessage("");
@@ -89,6 +144,7 @@ export function CasebookTextUpdate({
               .update({
                 action_body: row.action_body,
                 prevention_body: row.prevention_body,
+                ...(publishAll ? {review_status: "검토완료", published: true} : {}),
                 updated_at: new Date().toISOString(),
               })
               .eq("source_uid", row.source_uid)
@@ -108,7 +164,9 @@ export function CasebookTextUpdate({
       if (failures.length > 0) {
         setError(`${successful}건 반영, ${failures.length}건 실패. 재시도해도 이미 반영된 사진·공개상태는 유지됩니다. ${failures.slice(0, 3).join(" / ")}`);
       } else {
-        setMessage("146건의 개선조치·예방대책 반영 완료. 사진·사례번호·검토상태·공개상태는 유지되었습니다.");
+        setMessage(publishAll
+          ? "146건의 문안 수정과 전체 검토완료·공개 처리를 마쳤습니다. 기존 사진과 사례번호는 보존되었습니다."
+          : "146건의 개선조치·예방대책 반영 완료. 사진·사례번호·검토상태·공개상태는 유지되었습니다.");
       }
     } finally {
       setBusy(false);
@@ -118,8 +176,19 @@ export function CasebookTextUpdate({
   return (
     <section className="admin-sheet cb-import" style={{marginBottom: 18}}>
       <h3>개선조치·예방대책 일괄 수정 (146건)</h3>
-      <p>수정안 JSON을 선택해 원본 순번·대상 사례·새 문안을 확인한 뒤 적용합니다.
-        <strong> 사진·사례번호·검사기준·공개 여부는 변경하지 않습니다.</strong></p>
+      <p><strong>문안수정 전용 JSON</strong>을 선택하세요. 최초 등록용 JSON이 아니라
+        파일명에 '개선조치예방대책_수정제안'이 들어간 파일입니다.
+        사진·사례번호·검사기준·발생사유는 변경하지 않습니다.</p>
+      <div style={{margin:"12px 0",padding:"12px",border:"1px solid #dce3ee",borderRadius:8}}>
+        <b>JSON 업로드 없이 146건 모두 검토완료 처리</b>
+        <p style={{margin:"6px 0"}}>전체 사례의 검토상태만 변경하며 개선조치·예방대책 문안은 수정하지 않습니다. 기존 자료를 먼저 로컬 백업합니다.</p>
+        <button type="button" className="secondary-button"
+          disabled={busy || disabled || items.length !== 146}
+          onClick={() => void approveAll()}>
+          146건 전체 검토완료·공개
+        </button>
+        {items.length !== 146 && <small>현재 읽힌 사례 {items.length}건: 146건이 정확히 조회되어야 실행됩니다.</small>}
+      </div>
       <input type="file" accept=".json,application/json" aria-label="146건 문안 수정 JSON 파일"
         disabled={busy} onChange={async event => {
           setRows([]); setError(""); setMessage(""); setProgress(0);
@@ -136,8 +205,22 @@ export function CasebookTextUpdate({
       />
       {rows.length > 0 && (
         <>
-          <p>파일 {rows.length}건 · DB 식별자 일치 {rows.length - missing.length}건 ·
+          <p>파일 {rows.length}건 · 현재 DB 사례 {items.length}건 · DB 식별자 일치 {rows.length - missing.length}건 ·
             문안 변경 예정 {different.length}건 · 제목 불일치 {titleChanges.length}건</p>
+          {!exactCaseCount && <p role="alert" style={{color:"#b42318"}}>
+            현재 DB의 사례가 146건이 아닙니다. 다른 사례에 영향을 주지 않도록 적용을 중단합니다.
+          </p>}
+          <label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",fontWeight:700}}>
+            <input
+              type="checkbox" checked={publishAll} disabled={busy}
+              onChange={event => setPublishAll(event.target.checked)}
+            />
+            문안 수정과 함께 146건 모두 검토완료·공개하기
+          </label>
+          {publishAll && <p role="alert" style={{color:"#8b5316"}}>
+            전체 공개 시 현재 비공개 사례도 일반 방문자에게 보입니다.
+            사진·검사기준의 개별 검증이 아직 끝나지 않았다면 체크를 해제하세요.
+          </p>}
           {missing.length > 0 && <p role="alert" style={{color:"#b42318"}}>
             등록되지 않은 원본 식별자 {missing.length}건이 있어 적용하지 않습니다:
             {missing.slice(0, 4).map(x => x.source_uid).join(", ")}
@@ -156,9 +239,11 @@ export function CasebookTextUpdate({
             </div>
           </details>
           <button type="button" className="primary-button"
-            disabled={busy || disabled || rows.length !== 146 || missing.length !== 0}
+            disabled={busy || disabled || !allMatched}
             onClick={() => void save()}>
-            {busy ? `적용 중 ${progress}/146` : "146건 문안만 일괄 반영"}
+            {busy ? `적용 중 ${progress}/146` : publishAll
+              ? "146건 문안 수정 + 전체 검토완료·공개"
+              : "146건 문안만 일괄 반영"}
           </button>
           {disabled && <p role="alert">관리자 DB 검토 스키마가 준비되어야 합니다.</p>}
           {message && <p role="status">{message}</p>}
