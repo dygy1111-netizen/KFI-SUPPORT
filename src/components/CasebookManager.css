@@ -491,8 +491,24 @@
   justify-items: center;
 }
 
-.cb-preview-photos.two {
-  grid-template-columns: 1fr 1fr;
+.cb-preview-photos.two,
+.cb-preview-photos.multi {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 3–4 photos: pair two portrait photos per row without cropping or distortion. */
+.cb-preview-photos.multi {
+  align-items: center;
+  row-gap: 10px;
+  column-gap: 10px;
+}
+.cb-preview-photos.three .cb-photo-resize-slot:last-child {
+  grid-column: 1 / -1;
+  width: calc(50% - 5px);
+  justify-self: center;
+}
+.cb-preview-photos.multi .cb-photo-size-frame img {
+  max-height: 190px;
 }
 
 /* 사진 원본 비율 유지 */
@@ -895,6 +911,9 @@
 
 .content-section .cb-a4-page .cb-preview-photos.two img {
   height: 280px;
+}
+.content-section .cb-a4-page .cb-preview-photos.multi .cb-photo-size-frame img {
+  max-height: 210px;
 }
 
 @media (max-width: 940px) {
@@ -1369,12 +1388,20 @@
 }
 
 /* 사진 2장 */
-.cb-print-only .cb-preview-photos.two {
+.cb-print-only .cb-preview-photos.two,
+.cb-print-only .cb-preview-photos.multi {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-  gap: 3mm;
+  gap: 2mm;
+}
+.cb-print-only .cb-preview-photos.three .cb-photo-resize-slot:last-child {
+  grid-column: 1 / -1;
+  width: calc(50% - 1mm);
+}
+.cb-print-only .cb-preview-photos.multi .cb-photo-size-frame img {
+  max-height: var(--print-photo, 35mm);
 }
 
 /* 사진 크기 자동 조절 */
