@@ -18,7 +18,7 @@ import {
 
 import "./CasebookManager.css";
 
-import { casebookGroup, type CasebookCase } from "../lib/casebook";
+import { casebookGroup, photoWidthPercent, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 
@@ -58,6 +58,8 @@ const EMPTY_DRAFT: Draft = {
   facility: "",
   photo1_path: null,
   photo2_path: null,
+  photo1_width_pct: 100,
+  photo2_width_pct: 100,
   photo_caption: "",
   photo_note: "",
   standard_title: "",
@@ -282,6 +284,7 @@ export function CasebookManager({
   const originalTitle = useRef<string | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
   const [legacySchema, setLegacySchema] = useState(false);
+  const [photoSizeReady, setPhotoSizeReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -344,8 +347,9 @@ export function CasebookManager({
   const load = async () => {
     setLoading(true);
 
-    const { data, error, legacy } = await loadCasebook(false);
+    const { data, error, legacy, photoSizeReady: supported } = await loadCasebook(false);
     setLegacySchema(legacy);
+    setPhotoSizeReady(supported === true);
 
     if (error) {
       notify(error.message, true);
@@ -424,7 +428,11 @@ export function CasebookManager({
   );
 
   const edit = (item: CasebookCase, scroll = true) => {
-    setDraft({ ...item });
+    setDraft({
+      ...item,
+      photo1_width_pct: photoWidthPercent(item.photo1_width_pct),
+      photo2_width_pct: photoWidthPercent(item.photo2_width_pct),
+    });
     setFiles({ photo1: null, photo2: null });
     notify("");
     if (scroll) {
@@ -485,6 +493,10 @@ export function CasebookManager({
         facility: draft.facility.trim(),
         photo1_path: photo1Path,
         photo2_path: photo2Path,
+        ...(photoSizeReady ? {
+          photo1_width_pct: photoWidthPercent(draft.photo1_width_pct),
+          photo2_width_pct: photoWidthPercent(draft.photo2_width_pct),
+        } : {}),
         photo_caption: draft.photo_caption.trim(),
         photo_note: draft.photo_note.trim(),
         standard_title: draft.standard_title.trim(),
@@ -732,6 +744,11 @@ export function CasebookManager({
                     : "새 사례"}
                 </span>
                 <b>{draft.title || "제목을 입력해 주세요"}</b>
+                {sourceCaseNumber(draft) !== null && (
+                  <small style={{ color: "#0f766e", fontWeight: 800 }}>
+                    사진 연결용 원본 순번: {sourceCaseNumber(draft)}
+                  </small>
+                )}
               </div>
 
               {draft.id && (
@@ -820,7 +837,13 @@ export function CasebookManager({
               <legend>사례 기본정보</legend>
               <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
               <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
-              {draft.source_uid && <p>원본: {draft.source_sheet} {draft.source_row}행</p>}
+              {draft.source_uid && (
+                <p>
+                  원본 순번 <strong>{sourceCaseNumber(draft) ?? "미확인"}</strong>
+                  {" · "}{draft.source_sheet} 시트 {draft.source_row}행
+                  {" · "}사이트 사례번호 {draft.case_no}
+                </p>
+              )}
 
               <div className="admin-field-grid">
                 <label>
@@ -887,18 +910,51 @@ export function CasebookManager({
 
             <fieldset hidden={editorSection !== "photos"}>
               <legend>관련 사진</legend>
+              {sourceCaseNumber(draft) !== null && (
+                <div
+                  role="note"
+                  style={{
+                    background: "#fff7db",
+                    border: "1px solid #f0d78a",
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                    marginBottom: 12,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <strong>사진 파일 확인: 엑셀 원본 순번 {sourceCaseNumber(draft)}</strong>
+                  <div style={{ fontSize: 13 }}>
+                    예: 원본 {sourceCaseNumber(draft)}번이면 이름이 {sourceCaseNumber(draft)}.jpg인 사진을 직접 선택해 첨부하세요.
+                    사이트 사례번호 {draft.case_no}와는 다른 번호입니다. 사진은 자동 첨부되지 않습니다.
+                  </div>
+                </div>
+              )}
 
+              {!photoSizeReady && (
+                <p role="alert" className="cb-photo-resize-help">
+                  사진 크기 저장 기능은 데이터베이스 준비 후 사용할 수 있습니다.
+                  Supabase에 사진 크기 저장용 SQL을 먼저 적용하세요.
+                  사진 첨부 및 기존 사례 수정은 계속 가능합니다.
+                </p>
+              )}
+              <p className="cb-photo-resize-help">
+                처음에는 사진칸에 자동으로 맞춥니다. 사진을 선택한 후 크기 조절 막대나
+                오른쪽 A4 미리보기의 파란색 모서리를 마우스로 드래그하여 크기를 조절할 수 있습니다.
+              </p>
               <div className="cb-photo-input-grid">
                 <PhotoInput
                   label="사진 1"
                   preview={preview1}
                   file={files.photo1}
-                  onFile={(file) =>
-                    setFiles((current) => ({
-                      ...current,
-                      photo1: file,
-                    }))
-                  }
+                  originalNumber={sourceCaseNumber(draft)}
+                  widthPct={photoWidthPercent(draft.photo1_width_pct)}
+                  onWidthChange={photoSizeReady
+                    ? (value) => update("photo1_width_pct", value)
+                    : undefined}
+                  onFile={(file) => {
+                    setFiles((current) => ({...current, photo1: file}));
+                    if (file) update("photo1_width_pct", 100);
+                  }}
                   onRemove={() => void removePhoto(1)}
                 />
 
@@ -906,12 +962,15 @@ export function CasebookManager({
                   label="사진 2"
                   preview={preview2}
                   file={files.photo2}
-                  onFile={(file) =>
-                    setFiles((current) => ({
-                      ...current,
-                      photo2: file,
-                    }))
-                  }
+                  originalNumber={sourceCaseNumber(draft)}
+                  widthPct={photoWidthPercent(draft.photo2_width_pct)}
+                  onWidthChange={photoSizeReady
+                    ? (value) => update("photo2_width_pct", value)
+                    : undefined}
+                  onFile={(file) => {
+                    setFiles((current) => ({...current, photo2: file}));
+                    if (file) update("photo2_width_pct", 100);
+                  }}
                   onRemove={() => void removePhoto(2)}
                 />
               </div>
@@ -1068,6 +1127,9 @@ export function CasebookManager({
               } as CasebookCase}
               preview1={preview1}
               preview2={preview2}
+              onPhotoWidthChange={photoSizeReady
+                ? (slot, width) => update(slot === 1 ? "photo1_width_pct" : "photo2_width_pct", width)
+                : undefined}
               refs={{
                 title: titleRef,
                 photo: photoRef,
@@ -1143,6 +1205,7 @@ export function CasebookManager({
                     <span>
                       사례 {String(item.case_no).padStart(2, "0")} ·{" "}
                       {casebookGroup(item.inspection_type)} · {item.inspection_type}
+                      {sourceCaseNumber(item) !== null && ` · 원본 순번 ${sourceCaseNumber(item)}`}
                     </span>
                     <b>{item.title}</b>
                     <small>{item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
@@ -1192,15 +1255,26 @@ function PhotoInput({
   file,
   onFile,
   onRemove,
+  originalNumber,
+  widthPct,
+  onWidthChange,
 }: {
   label: string;
   preview: string;
   file: File | null;
   onFile: (file: File | null) => void;
   onRemove: () => void;
+  originalNumber: number | null;
+  widthPct: number;
+  onWidthChange?: (value: number) => void;
 }) {
   return (
     <div className="cb-photo-input">
+      {originalNumber !== null && (
+        <div className="cb-photo-original-number">
+          {label} · <strong>엑셀 원본 {originalNumber}번</strong>
+        </div>
+      )}
       <label>
         <div className="cb-photo-box">
           {preview ? (
@@ -1227,6 +1301,21 @@ function PhotoInput({
         </small>
       </label>
 
+      {preview && onWidthChange && (
+        <div className="cb-photo-size-control">
+          <label>
+            <span>표시 크기 {widthPct}%</span>
+            <input
+              type="range" min="45" max="100" step="1"
+              value={widthPct}
+              aria-label={`${label} 표시 크기`}
+              onChange={(event) => onWidthChange(Number(event.target.value))}
+            />
+          </label>
+          <button type="button" onClick={() => onWidthChange(100)}>자동 맞춤</button>
+        </div>
+      )}
+
       {preview && (
         <button
           type="button"
@@ -1249,18 +1338,71 @@ type PreviewRefs = {
   prevention: React.RefObject<HTMLDivElement | null>;
 };
 
+function ResizableCasePhoto({
+  src,
+  alt,
+  percent,
+  onChange,
+}: {
+  src: string;
+  alt: string;
+  percent: number;
+  onChange?: (width: number) => void;
+}) {
+  const slot = useRef<HTMLDivElement>(null);
+  const drag = useRef<{startX: number; startWidth: number; slotWidth: number} | null>(null);
+  return (
+    <div className="cb-photo-resize-slot" ref={slot}>
+      <div className="cb-photo-size-frame" style={{width: `${photoWidthPercent(percent)}%`}}>
+        <img src={src} alt={alt} style={{width: "100%", height: "auto", objectFit: "contain"}} />
+        {onChange && (
+          <button
+            type="button"
+            className="cb-photo-drag-handle"
+            aria-label={`${alt} 크기 조절`}
+            title="마우스로 드래그하여 사진 크기 조절"
+            onPointerDown={(event) => {
+              drag.current = {
+                startX: event.clientX,
+                startWidth: photoWidthPercent(percent),
+                slotWidth: slot.current?.getBoundingClientRect().width || 1,
+              };
+              event.currentTarget.setPointerCapture(event.pointerId);
+              event.preventDefault();
+            }}
+            onPointerMove={(event) => {
+              if (!drag.current) return;
+              onChange(photoWidthPercent(drag.current.startWidth +
+                (event.clientX - drag.current.startX) * 100 / drag.current.slotWidth));
+            }}
+            onPointerUp={(event) => {
+              drag.current = null;
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+            }}
+            onPointerCancel={() => {drag.current = null;}}
+          >↘</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CasebookPage({
   item,
   preview1,
   preview2,
   pageNumber = 1,
   refs,
+  onPhotoWidthChange,
 }: {
   item: CasebookCase;
   pageNumber?: number;
   preview1?: string;
   preview2?: string;
   refs?: PreviewRefs;
+  onPhotoWidthChange?: (slot: 1 | 2, percent: number) => void;
 }) {
   const image1 =
     preview1 !== undefined
@@ -1300,8 +1442,24 @@ export function CasebookPage({
                 image1 && image2 ? "two" : "one"
               }`}
             >
-              {image1 && <img src={image1} alt="관련 사진 1" />}
-              {image2 && <img src={image2} alt="관련 사진 2" />}
+              {image1 && (
+                <ResizableCasePhoto
+                  src={image1} alt="관련 사진 1"
+                  percent={photoWidthPercent(item.photo1_width_pct)}
+                  onChange={onPhotoWidthChange
+                    ? (width) => onPhotoWidthChange(1, width)
+                    : undefined}
+                />
+              )}
+              {image2 && (
+                <ResizableCasePhoto
+                  src={image2} alt="관련 사진 2"
+                  percent={photoWidthPercent(item.photo2_width_pct)}
+                  onChange={onPhotoWidthChange
+                    ? (width) => onPhotoWidthChange(2, width)
+                    : undefined}
+                />
+              )}
 
               {!image1 && !image2 && (
                 <div className="cb-photo-placeholder">

@@ -16,14 +16,20 @@ export async function loadCasebook(publicOnly: boolean) {
     if (visibility.error && !missingColumn(visibility.error)) return {data:null,error:visibility.error,legacy};
     hasPublished = !visibility.error;
   }
+  // Keep old sites readable until the optional photo-size migration is applied.
+  // Only missing-column errors permit falling back; never downgrade on auth/network errors.
+  const photoCheck = await supabase.from('casebook_cases').select('photo1_width_pct,photo2_width_pct').limit(0);
+  if (photoCheck.error && !missingColumn(photoCheck.error)) return {data:null,error:photoCheck.error,legacy,photoSizeReady:false};
+  const photoSizeReady = !photoCheck.error;
+  const photoFields = photoSizeReady ? ',photo1_width_pct,photo2_width_pct' : '';
   const rows: CasebookCase[] = [];
   for (let offset=0; ; offset+=500) {
-    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + (legacy ? '' : ',finding_type,test_item') : '*');
+    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + photoFields + (legacy ? '' : ',finding_type,test_item') : '*');
     if (publicOnly && hasPublished) query = query.eq('published',true);
     if (publicOnly && !legacy) query = query.eq('review_status','검토완료');
     const result = await query.order('sort_order').order('case_no').order('id').range(offset,offset+499);
-    if (result.error) return {data:null,error:result.error,legacy};
-    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,...row}) as CasebookCase));
-    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy};
+    if (result.error) return {data:null,error:result.error,legacy,photoSizeReady};
+    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,...row}) as CasebookCase));
+    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy,photoSizeReady};
   }
 }

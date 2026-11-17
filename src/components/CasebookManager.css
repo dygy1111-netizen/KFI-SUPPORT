@@ -1225,6 +1225,41 @@
   }
 }
 
+/* 사례 사진 수동 크기조절: 원본 이미지 비율은 유지 */
+.cb-photo-original-number {
+  background: #fff5cc;
+  border: 1px solid #ebca66;
+  color: #715100;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font-size: 0.85rem;
+  margin-bottom: 7px;
+}
+.cb-photo-resize-help { margin: 0 0 12px; color: #53657b; font-size: 0.84rem; line-height: 1.6; }
+.cb-photo-size-control { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.cb-photo-size-control label { flex: 1; min-width: 0; }
+.cb-photo-size-control label span { display: block; font-size: 0.77rem; font-weight: 800; }
+.cb-photo-size-control input { display: block; width: 100%; accent-color: #2465a8; }
+.cb-photo-size-control button {
+  flex: none; background: #fff; border: 1px solid #ccd7e3; border-radius: 6px;
+  padding: 6px 8px; color: #315477; font-size: 0.74rem; font-weight: 800;
+}
+.cb-photo-resize-slot { width: 100%; min-width: 0; display: flex; justify-content: center; align-items: center; }
+.cb-photo-size-frame { position: relative; min-width: 0; max-width: 100%; flex: none; }
+.cb-preview-photos .cb-photo-size-frame img { display: block; max-height: 320px; max-width: 100%; }
+.cb-preview-photos.two .cb-photo-size-frame img { max-height: 260px; }
+.content-section .cb-a4-page .cb-preview-photos .cb-photo-size-frame img { max-height: 360px; }
+.content-section .cb-a4-page .cb-preview-photos.two .cb-photo-size-frame img { max-height: 280px; }
+.cb-photo-drag-handle {
+  position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 27px; height: 27px;
+  background: #2465a8; color: #fff; border: 2px solid #fff; border-radius: 7px;
+  box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: nwse-resize; touch-action: none;
+  user-select: none; font-weight: 900;
+}
+.cb-photo-drag-handle:focus-visible { outline: 3px solid #ffbd42; outline-offset: 2px; }
+.cb-print-only .cb-preview-photos .cb-photo-size-frame img { max-height: var(--print-photo, 80mm); }
+@media print { .cb-photo-drag-handle { display: none !important; } }
+
 /* ============================================
    KFI 품질관리 사례집 A4 PDF 출력 전용 스타일
    ============================================ */
