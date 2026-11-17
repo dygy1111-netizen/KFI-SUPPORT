@@ -13,6 +13,8 @@ export type CasebookCase = {
 
   photo1_path: string | null;
   photo2_path: string | null;
+  photo1_width_pct: number;
+  photo2_width_pct: number;
   photo_caption: string;
   photo_note: string;
 
@@ -43,6 +45,12 @@ export type ImportCase = Omit<
   CasebookCase,
   "id" | "created_at" | "updated_at"
 >;
+
+/** Clamp a case photograph's displayed width (% of its available column). */
+export function photoWidthPercent(input: unknown): number {
+  const value = Number(input);
+  return Number.isFinite(value) && value > 0 ? Math.min(100, Math.max(45, Math.round(value))) : 100;
+}
 
 /** 엑셀 report 시트의 원본 순번. 가져오기 사례번호와는 별개입니다. */
 export function sourceCaseNumber(
@@ -234,6 +242,8 @@ export function parseImport(
 
         photo1_path: null,
         photo2_path: null,
+        photo1_width_pct: 100,
+        photo2_width_pct: 100,
         photo_caption: "",
         photo_note: "",
       });
