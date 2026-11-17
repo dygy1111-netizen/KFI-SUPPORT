@@ -279,6 +279,7 @@ type CasebookManagerProps = {
   showList?: boolean;
   onClose?: () => void;
   onSaved?: () => void | Promise<void>;
+  onDeleted?: () => void | Promise<void>;
 };
 
 export function CasebookManager({
@@ -287,6 +288,7 @@ export function CasebookManager({
   showList = false,
   onClose,
   onSaved,
+  onDeleted,
 }: CasebookManagerProps = {}) {
   const [items, setItems] = useState<CasebookCase[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
@@ -634,40 +636,61 @@ export function CasebookManager({
     }
   };
 
+  /**
+   * The user is consolidating duplicate cases. Always download a restorable
+   * row snapshot and KEEP Supabase Storage objects so photographs can be
+   * attached to the surviving case. Only the DB row is removed.
+   */
   const remove = async (item: CasebookCase) => {
-    if (!confirm(`사례 ${item.case_no} '${item.title}'을 삭제할까요?`)) {
+    if (busy) return;
+    const answer = window.prompt(
+      `사례 ${String(item.case_no).padStart(2, "0")} · ${item.title}\n\n삭제하면 목록과 공개 화면에서 사라집니다. 첨부 사진 파일은 병합을 위해 보관합니다.\n삭제하려면 사례번호 ${item.case_no}를 입력하세요.`,
+    );
+    if (answer === null || answer.trim() !== String(item.case_no)) {
+      if (answer !== null) notify("사례번호가 일치하지 않아 삭제하지 않았습니다.", true);
       return;
     }
+    if (!window.confirm(
+      `사례 ${item.case_no} '${item.title}'을 삭제할까요?\n\n삭제 전 사례의 문안·사진 경로를 JSON으로 내려받습니다. 사진 원본은 삭제하지 않습니다.`,
+    )) return;
 
     setBusy(true);
-
+    notify("");
     try {
+      // A local snapshot is important before a destructive database action.
+      // Blob downloads need to originate in the click action.
+      const blob = new Blob([JSON.stringify(item, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `KFI_삭제전_사례${String(item.case_no).padStart(2,"0")}_${item.id}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-
-      const { error } = await supabase
+      const {data, error} = await supabase
         .from("casebook_cases")
         .delete()
-        .eq("id", item.id);
-
+        .eq("id", item.id)
+        .select("id");
       if (error) throw error;
-
-      await Promise.allSettled(PHOTO_SLOTS.map(slot => removePublicFile(item[`photo${slot}_path`])));
-      setSelectedIds((current) =>
-        current.filter((id) => id !== item.id),
-      );
-
-      if (draft.id === item.id) {
-        setDraft(nextDraft(items.filter((row) => row.id !== item.id)));
-        setFiles(EMPTY_FILES);
+      if (data?.length !== 1) {
+        throw new Error("삭제된 사례가 확인되지 않습니다. 관리자 목록을 새로고침해 확인하세요.");
       }
 
+      // Do not delete files: they may be reused by another case when merging.
+      setSelectedIds(current => current.filter(id => id !== item.id));
+      if (draft.id === item.id) {
+        setDraft(nextDraft(items.filter(row => row.id !== item.id)));
+        setFiles(EMPTY_FILES);
+      }
       await load();
-      notify("사례를 삭제했습니다.");
+      notify(`사례 ${item.case_no} 삭제 완료. 사진 파일은 보관했습니다.`);
+      await onDeleted?.();
     } catch (error) {
       notify(
-        error instanceof Error
-          ? error.message
-          : "삭제하지 못했습니다.",
+        error instanceof Error ? error.message : "사례를 삭제하지 못했습니다.",
         true,
       );
     } finally {
@@ -1221,6 +1244,7 @@ export function CasebookManager({
                       type="button"
                       className="secondary-button"
                       onClick={onClose}
+                      disabled={busy}
                     >
                       닫기
                     </button>
@@ -1233,6 +1257,18 @@ export function CasebookManager({
                       수정 취소
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="cb-delete-case-button"
+                    disabled={busy}
+                    onClick={() => {
+                      const current = items.find(item => item.id === draft.id);
+                      if (current) void remove(current);
+                      else notify("삭제할 사례를 불러오지 못했습니다. 새로고침하세요.", true);
+                    }}
+                  >
+                    사례 삭제
+                  </button>
                 </>
               )}
             </div>
@@ -1347,7 +1383,9 @@ export function CasebookManager({
                       수정
                     </button>
                     <button
+                      type="button"
                       className="danger"
+                      disabled={busy}
                       onClick={() => void remove(item)}
                     >
                       삭제
