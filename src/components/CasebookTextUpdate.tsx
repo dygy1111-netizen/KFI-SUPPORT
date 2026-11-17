@@ -69,14 +69,7 @@ export function CasebookTextUpdate({
     return found && r.title_reference && found.title !== r.title_reference;
   });
 
-  async function save() {
-    if (disabled || busy || !allMatched) return;
-    if (!window.confirm(
-      publishAll
-        ? `146건 개선조치·예방대책을 갱신하고 전부 '검토완료·공개'로 설정합니다. 현재 문안과 다른 ${different.length}건이 교체되고, 비공개 사례도 공개됩니다. 법령·사진 확인이 끝나지 않은 사례가 포함되어 있으면 취소하세요. 적용할까요?`
-        : `146건 개선조치·예방대책 문안만 갱신합니다. 현재 문안과 다른 ${different.length}건이 교체되며 공개 상태는 유지됩니다. 적용할까요?`
-    )) return;
-    // Save an editable backup locally before attempting any database changes.
+  function downloadBackup() {
     const snapshot = items.map(item => ({
       source_uid: item.source_uid,
       case_no: item.case_no,
@@ -96,6 +89,43 @@ export function CasebookTextUpdate({
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(backupUrl), 1000);
+  }
+
+  async function approveAll() {
+    if (disabled || busy || items.length !== 146) return;
+    if (!window.confirm("146건 전부 검토완료·공개로 변경합니다. 미검증 사례도 공개되니 반드시 확인하세요. 실행할까요?")) return;
+    downloadBackup();
+    setBusy(true);
+    setMessage("");
+    setError("");
+    try {
+      // Single SQL UPDATE statement: no photo or text fields are changed.
+      const {data, error: updateError} = await supabase
+        .from("casebook_cases")
+        .update({review_status: "검토완료", published: true, updated_at: new Date().toISOString()})
+        .in("id", items.map(item => item.id))
+        .select("id");
+      if (updateError) throw updateError;
+      if (data?.length !== 146) {
+        throw new Error(`변경 결과 ${data?.length ?? 0}건으로 확인됩니다. 새로고침하여 남은 사례를 검사하세요.`);
+      }
+      await onComplete();
+      setMessage("146건 전체 검토완료·공개 처리 완료. 사진과 문안은 변경하지 않았습니다.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "공개 상태를 바꾸지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function save() {
+    if (disabled || busy || !allMatched) return;
+    if (!window.confirm(
+      publishAll
+        ? `146건 개선조치·예방대책을 갱신하고 전부 '검토완료·공개'로 설정합니다. 현재 문안과 다른 ${different.length}건이 교체되고, 비공개 사례도 공개됩니다. 법령·사진 확인이 끝나지 않은 사례가 포함되어 있으면 취소하세요. 적용할까요?`
+        : `146건 개선조치·예방대책 문안만 갱신합니다. 현재 문안과 다른 ${different.length}건이 교체되며 공개 상태는 유지됩니다. 적용할까요?`
+    )) return;
+    downloadBackup();
     setBusy(true);
     setError("");
     setMessage("");
@@ -149,6 +179,16 @@ export function CasebookTextUpdate({
       <p><strong>문안수정 전용 JSON</strong>을 선택하세요. 최초 등록용 JSON이 아니라
         파일명에 '개선조치예방대책_수정제안'이 들어간 파일입니다.
         사진·사례번호·검사기준·발생사유는 변경하지 않습니다.</p>
+      <div style={{margin:"12px 0",padding:"12px",border:"1px solid #dce3ee",borderRadius:8}}>
+        <b>JSON 업로드 없이 146건 모두 검토완료 처리</b>
+        <p style={{margin:"6px 0"}}>전체 사례의 검토상태만 변경하며 개선조치·예방대책 문안은 수정하지 않습니다. 기존 자료를 먼저 로컬 백업합니다.</p>
+        <button type="button" className="secondary-button"
+          disabled={busy || disabled || items.length !== 146}
+          onClick={() => void approveAll()}>
+          146건 전체 검토완료·공개
+        </button>
+        {items.length !== 146 && <small>현재 읽힌 사례 {items.length}건: 146건이 정확히 조회되어야 실행됩니다.</small>}
+      </div>
       <input type="file" accept=".json,application/json" aria-label="146건 문안 수정 JSON 파일"
         disabled={busy} onChange={async event => {
           setRows([]); setError(""); setMessage(""); setProgress(0);
