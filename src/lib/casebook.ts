@@ -50,6 +50,49 @@ export type CasebookCase = {
   updated_at?: string;
 };
 
+/**
+ * Compress completed Korean narrative statements into concise report-style endings.
+ * Changes presentation only unless a reviewer explicitly saves the editor fields.
+ * Keep measurements, standard names, and legal conditions untouched.
+ */
+export function compactCasebookProse(input: string): string {
+  if (!input) return "";
+  const fixed: Array<[RegExp, string]> = [
+    [/추정된다$/, "추정"],
+    [/판단된다$/, "판단"],
+    [/확인된다$/, "확인"],
+    [/필요하다$/, "필요"],
+    [/요구된다$/, "필요"],
+    [/가능하다$/, "가능"],
+    [/존재한다$/, "존재"],
+    [/발생한다$/, "발생"],
+    [/확인할 수 있다$/, "확인 가능"],
+    [/해야 한다$/, "필요"],
+    [/하여야 한다$/, "필요"],
+    [/이력을 남긴다$/, "이력 기록"],
+    [/기록을 남긴다$/, "기록 보존"],
+    [/남긴다$/, "기록"],
+    [/바로잡는다$/, "시정"],
+    [/지킨다$/, "준수"],
+    [/맞춘다$/, "조정"],
+    [/([가-힣]{2,})(?:한다|하였다|했다|된다|되었다)$/, "$1"],
+  ];
+  const convert = (sentence: string) => {
+    const withoutPeriod = sentence.trim().replace(/[.。]\s*$/, "");
+    for (const [pattern, replacement] of fixed) {
+      if (pattern.test(withoutPeriod)) return withoutPeriod.replace(pattern, replacement);
+    }
+    return withoutPeriod;
+  };
+  return input.split(/\r?\n/).map(line =>
+    line
+      .split(/(?<=[.。])\s+(?=[가-힣])/)
+      .map(convert)
+      .filter(Boolean)
+      .join(" · ")
+  ).join("\n");
+}
+
 /** Picture order in the editor, public detail page, cards and A4 prints. */
 export const PHOTO_SLOTS = [1, 2, 3, 4] as const;
 export type PhotoSlot = (typeof PHOTO_SLOTS)[number];
