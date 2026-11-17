@@ -13,11 +13,17 @@ export type CasebookCase = {
 
   photo1_path: string | null;
   photo2_path: string | null;
+  photo3_path: string | null;
+  photo4_path: string | null;
   photo1_width_pct: number;
   photo2_width_pct: number;
+  photo3_width_pct: number;
+  photo4_width_pct: number;
   /** Extra horizontal stretch of the pixels, independent from the fitted photo height. */
   photo1_stretch_x_pct: number;
   photo2_stretch_x_pct: number;
+  photo3_stretch_x_pct: number;
+  photo4_stretch_x_pct: number;
   photo_caption: string;
   photo_note: string;
 
@@ -43,6 +49,19 @@ export type CasebookCase = {
   created_at?: string;
   updated_at?: string;
 };
+
+/** Picture order in the editor, public detail page, cards and A4 prints. */
+export const PHOTO_SLOTS = [1, 2, 3, 4] as const;
+export type PhotoSlot = (typeof PHOTO_SLOTS)[number];
+
+export function casebookPhotoPaths(
+  item: Pick<CasebookCase, "photo1_path" | "photo2_path" | "photo3_path" | "photo4_path">,
+): Array<{slot: PhotoSlot; path: string}> {
+  return PHOTO_SLOTS.flatMap(slot => {
+    const path = item[`photo${slot}_path`];
+    return path ? [{slot, path}] : [];
+  });
+}
 
 export type ImportCase = Omit<
   CasebookCase,
@@ -253,10 +272,16 @@ export function parseImport(
 
         photo1_path: null,
         photo2_path: null,
+        photo3_path: null,
+        photo4_path: null,
         photo1_width_pct: 100,
         photo2_width_pct: 100,
+        photo3_width_pct: 100,
+        photo4_width_pct: 100,
         photo1_stretch_x_pct: 100,
         photo2_stretch_x_pct: 100,
+        photo3_stretch_x_pct: 100,
+        photo4_stretch_x_pct: 100,
         photo_caption: "",
         photo_note: "",
       });
