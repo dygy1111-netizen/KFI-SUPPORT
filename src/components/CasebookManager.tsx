@@ -1444,7 +1444,7 @@ export function CasebookPage({
                     ? (width) => onPhotoWidthChange(2, width)
                     : undefined}
                 />
-              )
+              )}
 
               {!image1 && !image2 && (
                 <div className="cb-photo-placeholder">
