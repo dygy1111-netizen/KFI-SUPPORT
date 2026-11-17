@@ -6,7 +6,7 @@ import { createServer } from 'vite';
 const server = await createServer({server:{middlewareMode:true},appType:'custom'});
 const db = new PGlite();
 try {
-  const {parseImport,photoWidthPercent,photoHorizontalStretch} = await server.ssrLoadModule('/src/lib/casebook.ts');
+  const {parseImport,photoWidthPercent,photoHorizontalStretch,casebookPhotoPaths} = await server.ssrLoadModule('/src/lib/casebook.ts');
   assert.equal(photoWidthPercent(undefined),100);
   assert.equal(photoWidthPercent(125),100);
   assert.equal(photoWidthPercent(10),45);
@@ -15,6 +15,9 @@ try {
   assert.equal(photoHorizontalStretch(0),100);
   assert.equal(photoHorizontalStretch(175.4),175);
   assert.equal(photoHorizontalStretch(450),300);
+  assert.deepEqual(casebookPhotoPaths({photo1_path:"first.jpg",photo2_path:null,photo3_path:"third.jpg",photo4_path:"fourth.jpg"}),[
+    {slot:1,path:"first.jpg"},{slot:3,path:"third.jpg"},{slot:4,path:"fourth.jpg"}
+  ]);
   const input = {source_uid:'test:row:1',source_row:2,source_sheet:'test',inspection_type:'교반기',title:'시험 사례',facility:'',standard_title:'기준',standard_body:'요구사항',cause_title:'',cause_body:'확인사항',action_body:'조치',prevention_body:'예방',finding_type:'부적합',test_item:'시험',review_note:'',published:true,review_status:'검토완료',photo1_path:'untrusted.jpg'};
   const parsed = parseImport([input]);
   assert.equal(parsed.rows.length,1);
@@ -42,10 +45,20 @@ try {
   const stretchSql = await fs.readFile('supabase/migrations/20261117001000_casebook_horizontal_stretch.sql','utf8');
   await db.exec(stretchSql);
   await db.exec(stretchSql); // safe to run twice, keeping existing cases
+  const fourPhotoSql = await fs.readFile('supabase/migrations/20261117002000_casebook_four_photos.sql','utf8');
+  await db.exec(fourPhotoSql);
+  await db.exec(fourPhotoSql); // no duplicate columns or default changes
   let legacy=(await db.query('select * from casebook_cases')).rows[0];
   assert.equal(legacy.photo1_path,'keep.jpg'); assert.equal(legacy.published,true);
   assert.equal(legacy.photo1_width_pct,100); assert.equal(legacy.photo2_width_pct,100);
   assert.equal(legacy.photo1_stretch_x_pct,100); assert.equal(legacy.photo2_stretch_x_pct,100);
+  assert.equal(legacy.photo3_path,null); assert.equal(legacy.photo4_path,null);
+  assert.equal(legacy.photo3_width_pct,100); assert.equal(legacy.photo4_stretch_x_pct,100);
+  await db.exec("update casebook_cases set photo3_path='third.webp', photo4_path='fourth.webp' where title='legacy'");
+  await db.exec(fourPhotoSql);
+  legacy=(await db.query("select * from casebook_cases where title='legacy'")).rows[0];
+  assert.equal(legacy.photo3_path,'third.webp'); assert.equal(legacy.photo4_path,'fourth.webp');
+  await assert.rejects(db.exec("update casebook_cases set photo3_stretch_x_pct=999 where title='legacy'"));
   await db.exec("update casebook_cases set photo1_stretch_x_pct=180 where title='legacy'");
   await db.exec(stretchSql);
   const kept=(await db.query("select photo1_stretch_x_pct from casebook_cases where title='legacy'")).rows[0];
