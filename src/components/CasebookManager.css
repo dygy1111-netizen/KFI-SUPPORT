@@ -1564,3 +1564,87 @@
   .case-grid-text-only { grid-template-columns: minmax(0, 1fr); }
   .case-grid-text-only .case-card { min-height: 150px; }
 }
+
+/* Photo display: use the same aspect-aware sizing in the editor and public details.
+   An image's *visible* width is the actual source ratio multiplied by the
+   user's saved horizontal-stretch value. Do not leave invisible half-width frames. */
+.cb-a4-page .cb-preview-photos.one,
+.cb-a4-page .cb-preview-photos.two {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.cb-a4-page .cb-preview-photos.one { --case-photo-height: 360px; }
+.cb-a4-page .cb-preview-photos.two { --case-photo-height: 290px; }
+.cb-a4-page .cb-preview-photos.multi { --case-photo-height: 210px; }
+
+.cb-a4-page .cb-preview-photos.one .cb-photo-resize-slot {
+  width: min(100%, calc(var(--case-photo-height) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+  flex: 0 0 auto;
+}
+.cb-a4-page .cb-preview-photos.two .cb-photo-resize-slot {
+  width: min(calc(50% - 6px), calc(var(--case-photo-height) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+  flex: 0 0 auto;
+}
+.cb-a4-page .cb-preview-photos.multi .cb-photo-resize-slot {
+  width: min(100%, calc(var(--case-photo-height) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+  justify-self: center;
+}
+.cb-a4-page .cb-preview-photos.three .cb-photo-resize-slot:last-child {
+  grid-column: 1 / -1;
+  width: min(calc(50% - 5px), calc(var(--case-photo-height) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+}
+.cb-a4-page .cb-preview-photos .cb-photo-size-frame {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.cb-a4-page .cb-preview-photos .cb-photo-size-frame img {
+  display: block;
+  height: auto !important;
+  max-height: var(--case-photo-height);
+  max-width: none;
+  object-fit: contain;
+  transform-origin: center;
+  border: 0;
+  background: transparent;
+}
+/* Print uses physical millimetres and its own calculated height budget. */
+.cb-print-only .cb-preview-photos .cb-photo-size-frame img {
+  height: auto !important;
+  width: calc(100% / var(--photo-stretch, 1)) !important;
+  max-width: none !important;
+  max-height: var(--print-photo, 80mm) !important;
+  transform: scaleX(var(--photo-stretch, 1));
+  transform-origin: center;
+}
+.cb-print-only .cb-preview-photos.one .cb-photo-resize-slot {
+  width: min(100%, calc(var(--print-photo, 80mm) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+}
+.cb-print-only .cb-preview-photos.two .cb-photo-resize-slot {
+  width: min(calc(50% - 1.5mm), calc(var(--print-photo, 80mm) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+}
+.cb-print-only .cb-preview-photos.multi .cb-photo-resize-slot {
+  width: min(100%, calc(var(--print-photo, 50mm) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+}
+.cb-print-only .cb-preview-photos.three .cb-photo-resize-slot:last-child {
+  width: min(calc(50% - 1.25mm), calc(var(--print-photo, 50mm) * var(--photo-ratio, 1) * var(--photo-stretch, 1)));
+}
+
+/* Destructive action: available only in the authenticated editor. */
+.cb-delete-case-button {
+  margin-left: auto;
+  border: 1px solid #d98b8b;
+  color: #a52727;
+  background: #fff5f5;
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.cb-delete-case-button:hover:not(:disabled) {
+  background: #ffe8e8;
+}
+.cb-delete-case-button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
