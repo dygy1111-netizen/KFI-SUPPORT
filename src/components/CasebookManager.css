@@ -1478,94 +1478,89 @@
 }
 
 
-/* 품질사례 목록: 원본 사진이 잘리지 않는 전체사진 카드 */
-.case-grid-full-photos {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+/* 품질사례 목록: 사진 없는 균일한 높이의 텍스트 카드 */
+.case-grid-text-only {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
 }
-.case-grid-full-photos .case-card-shell .case-card {
+.case-grid-text-only .case-card-shell {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.case-grid-text-only .case-card {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  min-height: 180px;
   height: 100%;
 }
-.case-grid-full-photos .case-visual-full {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
-  justify-items: stretch;
-  gap: 10px;
-  height: auto;
-  min-height: 260px;
-  padding: 12px;
-  overflow: hidden;
-  background: #f3f6fa;
-}
-.case-grid-full-photos .case-visual-full.has-two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.case-grid-full-photos .case-photo-complete {
-  width: 100%;
-  min-width: 0;
-  margin: 0;
+.case-grid-text-only .case-copy {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  flex: 1;
+  padding: 16px 17px 14px;
+  min-width: 0;
+}
+.case-grid-text-only .case-card-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #dbe4ee;
-  border-radius: 7px;
+  margin-bottom: 12px;
+}
+.case-grid-text-only .case-card-meta span {
+  display: inline-block;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #eef3f9;
+  color: #32516c;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.case-grid-text-only .case-card-meta span.case-number-label {
+  background: #deebfb;
+  color: #164d85;
+}
+.case-grid-text-only .case-card-meta span.is-reviewed {
+  background: #e7f7ee;
+  color: #17643c;
+}
+.case-grid-text-only .case-card-meta span.is-pending {
+  background: #fff4df;
+  color: #8f5a1c;
+}
+.case-grid-text-only .case-copy h3 {
+  font-size: 1.02rem;
+  line-height: 1.5;
+  margin: 0 0 9px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
 }
-.case-grid-full-photos .case-photo-complete img {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  height: 310px;
-  max-height: 310px;
-  padding: 7px;
-  object-fit: contain !important; /* 세로/가로 사진 가장자리를 절대 자르지 않음 */
-  object-position: center;
-  background: #ffffff;
+.case-grid-text-only .case-copy p {
+  font-size: 0.86rem;
+  color: #566879;
+  line-height: 1.5;
+  margin: 0 0 10px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
-.case-grid-full-photos .case-photo-complete figcaption {
-  padding: 3px 6px 7px;
-  text-align: center;
-  font-size: 0.78rem;
-  color: #52657a;
-  font-weight: 700;
+.case-grid-text-only .case-copy > b {
+  margin-top: auto;
+  font-size: 0.82rem;
+  color: #2563a1;
 }
-.case-grid-full-photos .case-photo-empty {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  min-height: 200px;
-  color: #687a90;
-  font-size: 0.95rem;
-  font-weight: 700;
+@media (max-width: 1030px) {
+  .case-grid-text-only { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.case-grid-full-photos .case-card-meta {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.case-grid-full-photos .case-card-meta span {
-  position: static;
-  display: inline-block;
-  color: #20466e;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: #e9f2fd;
-  font-size: 0.77rem;
-  font-weight: 800;
-}
-.case-grid-full-photos .case-card-meta span.is-reviewed {color: #17643c; background: #e7f7ee;}
-.case-grid-full-photos .case-card-meta span.is-pending {color: #8f5a1c; background: #fff4df;}
-@media (max-width: 900px) {
-  .case-grid-full-photos { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 530px) {
-  .case-grid-full-photos .case-visual-full { min-height: 200px; padding: 8px; gap: 6px; }
-  .case-grid-full-photos .case-photo-complete img { height: 250px; max-height: 250px; }
+@media (max-width: 620px) {
+  .case-grid-text-only { grid-template-columns: minmax(0, 1fr); }
+  .case-grid-text-only .case-card { min-height: 150px; }
 }
