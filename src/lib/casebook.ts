@@ -15,6 +15,9 @@ export type CasebookCase = {
   photo2_path: string | null;
   photo1_width_pct: number;
   photo2_width_pct: number;
+  /** Extra horizontal stretch of the pixels, independent from the fitted photo height. */
+  photo1_stretch_x_pct: number;
+  photo2_stretch_x_pct: number;
   photo_caption: string;
   photo_note: string;
 
@@ -50,6 +53,14 @@ export type ImportCase = Omit<
 export function photoWidthPercent(input: unknown): number {
   const value = Number(input);
   return Number.isFinite(value) && value > 0 ? Math.min(100, Math.max(45, Math.round(value))) : 100;
+}
+
+/** 100% preserves the original photograph. Higher values widen it without changing height. */
+export function photoHorizontalStretch(input: unknown): number {
+  const value = Number(input);
+  return Number.isFinite(value) && value >= 100
+    ? Math.max(100, Math.min(300, Math.round(value)))
+    : 100;
 }
 
 /** 엑셀 report 시트의 원본 순번. 가져오기 사례번호와는 별개입니다. */
@@ -244,6 +255,8 @@ export function parseImport(
         photo2_path: null,
         photo1_width_pct: 100,
         photo2_width_pct: 100,
+        photo1_stretch_x_pct: 100,
+        photo2_stretch_x_pct: 100,
         photo_caption: "",
         photo_note: "",
       });
