@@ -20,7 +20,7 @@ import "./CasebookManager.css";
 
 
 import { loadCasebook } from '../lib/casebookQuery';
-import type { CasebookCase } from "../lib/casebook";
+import { sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { CasebookManager, CasebookPage } from "./CasebookManager";
 
 type ZoomLevel =
@@ -222,11 +222,15 @@ export function PublicCasebookView({
           .join(" ")
           .toLowerCase();
 
+        const originalNumberQuery =
+          isAdmin && /^\d+$/.test(normalizedQuery)
+            ? Number(normalizedQuery)
+            : null;
+
         const queryMatch =
-          !normalizedQuery ||
-          searchText.includes(
-            normalizedQuery,
-          );
+          originalNumberQuery !== null
+            ? sourceCaseNumber(item) === originalNumberQuery
+            : !normalizedQuery || searchText.includes(normalizedQuery);
 
         return (
           categoryMatch &&
@@ -237,6 +241,7 @@ export function PublicCasebookView({
       items,
       category,
       normalizedQuery,
+      isAdmin,
     ],
   );
 
@@ -519,7 +524,7 @@ export function PublicCasebookView({
                   event.target.value,
                 )
               }
-              placeholder="사례명, 발생사유, 개선조치 검색"
+              placeholder={isAdmin ? "원본 순번(예: 77) 또는 사례명 검색" : "사례명, 발생사유, 개선조치 검색"}
             />
           </div>
 
@@ -641,6 +646,13 @@ export function PublicCasebookView({
                     <div className="case-copy">
 
                       <h3>{item.title}</h3>
+                      {isAdmin && sourceCaseNumber(item) !== null && (
+                        <small
+                          style={{ display: "block", marginBottom: 6, fontWeight: 800, color: "#0f766e" }}
+                        >
+                          사진 연결용 원본 순번 {sourceCaseNumber(item)} · 사이트 사례번호 {item.case_no}
+                        </small>
+                      )}
 
                       <p>{item.facility || item.cause_title}</p>
 
