@@ -21,6 +21,7 @@ import "./CasebookManager.css";
 import { casebookGroup, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
+import { CasebookTextUpdate } from "./CasebookTextUpdate";
 
 type Draft = Omit<
   CasebookCase,
@@ -737,11 +738,18 @@ export function CasebookManager({
         )}
 
         {showImport && (
-          <CasebookImport
-            items={items}
-            onComplete={load}
-            disabled={legacySchema}
-          />
+          <>
+            <CasebookImport
+              items={items}
+              onComplete={load}
+              disabled={legacySchema}
+            />
+            <CasebookTextUpdate
+              items={items}
+              onComplete={load}
+              disabled={legacySchema || loading}
+            />
+          </>
         )}
 
         <div className="cb-editor-grid">

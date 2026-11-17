@@ -595,7 +595,7 @@ export function PublicCasebookView({
         {!loading &&
           !error &&
           filtered.length > 0 && (
-          <div className="case-grid">
+          <div className="case-grid case-grid-full-photos">
             {filtered.map(
               (item) => (
                 <article
@@ -618,33 +618,41 @@ export function PublicCasebookView({
                       });
                     }}
                   >
-                    <div className="case-visual">
-                      {item.photo1_path ? (
-                        <img
-                          src={publicAssetUrl(item.photo1_path)}
-                          alt={item.title}
-                        />
-                      ) : (
-                        <i>!</i>
+                    <div className={`case-visual case-visual-full ${item.photo1_path && item.photo2_path ? "has-two" : "has-one"}`}>
+                      {item.photo1_path && (
+                        <figure className="case-photo-complete">
+                          <img
+                            src={publicAssetUrl(item.photo1_path)}
+                            alt={`${item.title} 사진 1`}
+                            loading="lazy"
+                          />
+                          {item.photo2_path && <figcaption>사진 1</figcaption>}
+                        </figure>
                       )}
-
-                      <span>{item.inspection_type}</span>
-
-                      {isAdmin && (
-                        <b
-                          className={
-                            item.review_status === "검토완료"
-                              ? "is-reviewed"
-                              : "is-pending"
-                          }
-                        >
-                          {item.review_status}
-                        </b>
+                      {item.photo2_path && (
+                        <figure className="case-photo-complete">
+                          <img
+                            src={publicAssetUrl(item.photo2_path)}
+                            alt={`${item.title} 사진 2`}
+                            loading="lazy"
+                          />
+                          <figcaption>사진 2</figcaption>
+                        </figure>
+                      )}
+                      {!item.photo1_path && !item.photo2_path && (
+                        <div className="case-photo-empty">사진 등록 전</div>
                       )}
                     </div>
 
                     <div className="case-copy">
-
+                      <div className="case-card-meta">
+                        <span>{item.inspection_type}</span>
+                        {isAdmin && (
+                          <span className={item.review_status === "검토완료" ? "is-reviewed" : "is-pending"}>
+                            {item.review_status}
+                          </span>
+                        )}
+                      </div>
                       <h3>{item.title}</h3>
                       {isAdmin && sourceCaseNumber(item) !== null && (
                         <small
