@@ -18,7 +18,7 @@ import {
 
 import "./CasebookManager.css";
 
-import { casebookGroup, photoWidthPercent, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
+import { casebookGroup, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 
@@ -60,6 +60,8 @@ const EMPTY_DRAFT: Draft = {
   photo2_path: null,
   photo1_width_pct: 100,
   photo2_width_pct: 100,
+  photo1_stretch_x_pct: 100,
+  photo2_stretch_x_pct: 100,
   photo_caption: "",
   photo_note: "",
   standard_title: "",
@@ -285,6 +287,7 @@ export function CasebookManager({
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
   const [legacySchema, setLegacySchema] = useState(false);
   const [photoSizeReady, setPhotoSizeReady] = useState(false);
+  const [photoStretchReady, setPhotoStretchReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -347,9 +350,10 @@ export function CasebookManager({
   const load = async () => {
     setLoading(true);
 
-    const { data, error, legacy, photoSizeReady: supported } = await loadCasebook(false);
+    const { data, error, legacy, photoSizeReady: supported, photoStretchReady: stretchSupported } = await loadCasebook(false);
     setLegacySchema(legacy);
     setPhotoSizeReady(supported === true);
+    setPhotoStretchReady(stretchSupported === true);
 
     if (error) {
       notify(error.message, true);
@@ -432,6 +436,8 @@ export function CasebookManager({
       ...item,
       photo1_width_pct: photoWidthPercent(item.photo1_width_pct),
       photo2_width_pct: photoWidthPercent(item.photo2_width_pct),
+      photo1_stretch_x_pct: photoHorizontalStretch(item.photo1_stretch_x_pct),
+      photo2_stretch_x_pct: photoHorizontalStretch(item.photo2_stretch_x_pct),
     });
     setFiles({ photo1: null, photo2: null });
     notify("");
@@ -496,6 +502,10 @@ export function CasebookManager({
         ...(photoSizeReady ? {
           photo1_width_pct: photoWidthPercent(draft.photo1_width_pct),
           photo2_width_pct: photoWidthPercent(draft.photo2_width_pct),
+        } : {}),
+        ...(photoStretchReady ? {
+          photo1_stretch_x_pct: photoHorizontalStretch(draft.photo1_stretch_x_pct),
+          photo2_stretch_x_pct: photoHorizontalStretch(draft.photo2_stretch_x_pct),
         } : {}),
         photo_caption: draft.photo_caption.trim(),
         photo_note: draft.photo_note.trim(),
@@ -937,9 +947,16 @@ export function CasebookManager({
                   사진 첨부 및 기존 사례 수정은 계속 가능합니다.
                 </p>
               )}
+              {!photoStretchReady && (
+                <p role="note" className="cb-photo-resize-help">
+                  가로만 늘이기는 새 사진 가로 조절 SQL 적용 후 사용할 수 있습니다.
+                  기존 사례의 사진 첨부와 전체 크기 조절은 계속 가능합니다.
+                </p>
+              )}
               <p className="cb-photo-resize-help">
-                처음에는 사진칸에 자동으로 맞춥니다. 사진을 선택한 후 크기 조절 막대나
-                오른쪽 A4 미리보기의 파란색 모서리를 마우스로 드래그하여 크기를 조절할 수 있습니다.
+                세로형 사진은 높이를 그대로 두고 <strong>가로만 늘이기</strong>로 실제 사진 폭을 조절하세요.
+                사진 아래 가로 조절 막대 또는 오른쪽 A4 미리보기의 파란 ↔ 손잡이를 드래그합니다.
+                기본값 100%는 원본 비율을 유지합니다.
               </p>
               <div className="cb-photo-input-grid">
                 <PhotoInput
@@ -948,12 +965,19 @@ export function CasebookManager({
                   file={files.photo1}
                   originalNumber={sourceCaseNumber(draft)}
                   widthPct={photoWidthPercent(draft.photo1_width_pct)}
+                  stretchPct={photoHorizontalStretch(draft.photo1_stretch_x_pct)}
                   onWidthChange={photoSizeReady
                     ? (value) => update("photo1_width_pct", value)
                     : undefined}
+                  onStretchChange={photoStretchReady
+                    ? (value) => update("photo1_stretch_x_pct", value)
+                    : undefined}
                   onFile={(file) => {
                     setFiles((current) => ({...current, photo1: file}));
-                    if (file) update("photo1_width_pct", 100);
+                    if (file) {
+                      update("photo1_width_pct", 100);
+                      update("photo1_stretch_x_pct", 100);
+                    }
                   }}
                   onRemove={() => void removePhoto(1)}
                 />
@@ -964,12 +988,19 @@ export function CasebookManager({
                   file={files.photo2}
                   originalNumber={sourceCaseNumber(draft)}
                   widthPct={photoWidthPercent(draft.photo2_width_pct)}
+                  stretchPct={photoHorizontalStretch(draft.photo2_stretch_x_pct)}
                   onWidthChange={photoSizeReady
                     ? (value) => update("photo2_width_pct", value)
                     : undefined}
+                  onStretchChange={photoStretchReady
+                    ? (value) => update("photo2_stretch_x_pct", value)
+                    : undefined}
                   onFile={(file) => {
                     setFiles((current) => ({...current, photo2: file}));
-                    if (file) update("photo2_width_pct", 100);
+                    if (file) {
+                      update("photo2_width_pct", 100);
+                      update("photo2_stretch_x_pct", 100);
+                    }
                   }}
                   onRemove={() => void removePhoto(2)}
                 />
@@ -1127,8 +1158,8 @@ export function CasebookManager({
               } as CasebookCase}
               preview1={preview1}
               preview2={preview2}
-              onPhotoWidthChange={photoSizeReady
-                ? (slot, width) => update(slot === 1 ? "photo1_width_pct" : "photo2_width_pct", width)
+              onPhotoStretchChange={photoStretchReady
+                ? (slot, width) => update(slot === 1 ? "photo1_stretch_x_pct" : "photo2_stretch_x_pct", width)
                 : undefined}
               refs={{
                 title: titleRef,
@@ -1258,6 +1289,8 @@ function PhotoInput({
   originalNumber,
   widthPct,
   onWidthChange,
+  stretchPct,
+  onStretchChange,
 }: {
   label: string;
   preview: string;
@@ -1267,6 +1300,8 @@ function PhotoInput({
   originalNumber: number | null;
   widthPct: number;
   onWidthChange?: (value: number) => void;
+  stretchPct: number;
+  onStretchChange?: (value: number) => void;
 }) {
   return (
     <div className="cb-photo-input">
@@ -1304,7 +1339,7 @@ function PhotoInput({
       {preview && onWidthChange && (
         <div className="cb-photo-size-control">
           <label>
-            <span>표시 크기 {widthPct}%</span>
+            <span>사진칸 폭 {widthPct}%</span>
             <input
               type="range" min="45" max="100" step="1"
               value={widthPct}
@@ -1313,6 +1348,21 @@ function PhotoInput({
             />
           </label>
           <button type="button" onClick={() => onWidthChange(100)}>자동 맞춤</button>
+        </div>
+      )}
+
+      {preview && onStretchChange && (
+        <div className="cb-photo-size-control cb-photo-stretch-control">
+          <label>
+            <span>실제 사진 가로만 늘이기 {stretchPct}% (세로 고정)</span>
+            <input
+              type="range" min="100" max="300" step="5"
+              value={stretchPct}
+              aria-label={`${label} 가로만 늘이기`}
+              onChange={(event) => onStretchChange(Number(event.target.value))}
+            />
+          </label>
+          <button type="button" onClick={() => onStretchChange(100)}>원본 비율</button>
         </div>
       )}
 
@@ -1342,29 +1392,42 @@ function ResizableCasePhoto({
   src,
   alt,
   percent,
-  onChange,
+  horizontalStretch,
+  onHorizontalStretch,
 }: {
   src: string;
   alt: string;
   percent: number;
-  onChange?: (width: number) => void;
+  horizontalStretch: number;
+  onHorizontalStretch?: (width: number) => void;
 }) {
   const slot = useRef<HTMLDivElement>(null);
-  const drag = useRef<{startX: number; startWidth: number; slotWidth: number} | null>(null);
+  const drag = useRef<{startX: number; startStretch: number; slotWidth: number} | null>(null);
   return (
     <div className="cb-photo-resize-slot" ref={slot}>
       <div className="cb-photo-size-frame" style={{width: `${photoWidthPercent(percent)}%`}}>
-        <img src={src} alt={alt} style={{width: "100%", height: "auto", objectFit: "contain"}} />
-        {onChange && (
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            width: "auto",
+            height: "auto",
+            maxWidth: "100%",
+            objectFit: "contain",
+            transform: `scaleX(${photoHorizontalStretch(horizontalStretch) / 100})`,
+            transformOrigin: "center center",
+          }}
+        />
+        {onHorizontalStretch && (
           <button
             type="button"
             className="cb-photo-drag-handle"
-            aria-label={`${alt} 크기 조절`}
-            title="마우스로 드래그하여 사진 크기 조절"
+            aria-label={`${alt} 가로만 늘이기`}
+            title="좌우로 드래그하여 실제 사진의 가로 폭만 조절 (높이 유지)"
             onPointerDown={(event) => {
               drag.current = {
                 startX: event.clientX,
-                startWidth: photoWidthPercent(percent),
+                startStretch: photoHorizontalStretch(horizontalStretch),
                 slotWidth: slot.current?.getBoundingClientRect().width || 1,
               };
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -1372,8 +1435,8 @@ function ResizableCasePhoto({
             }}
             onPointerMove={(event) => {
               if (!drag.current) return;
-              onChange(photoWidthPercent(drag.current.startWidth +
-                (event.clientX - drag.current.startX) * 100 / drag.current.slotWidth));
+              onHorizontalStretch(photoHorizontalStretch(drag.current.startStretch +
+                (event.clientX - drag.current.startX) * 250 / drag.current.slotWidth));
             }}
             onPointerUp={(event) => {
               drag.current = null;
@@ -1382,7 +1445,7 @@ function ResizableCasePhoto({
               }
             }}
             onPointerCancel={() => {drag.current = null;}}
-          >↘</button>
+          >↔</button>
         )}
       </div>
     </div>
@@ -1395,14 +1458,14 @@ export function CasebookPage({
   preview2,
   pageNumber = 1,
   refs,
-  onPhotoWidthChange,
+  onPhotoStretchChange,
 }: {
   item: CasebookCase;
   pageNumber?: number;
   preview1?: string;
   preview2?: string;
   refs?: PreviewRefs;
-  onPhotoWidthChange?: (slot: 1 | 2, percent: number) => void;
+  onPhotoStretchChange?: (slot: 1 | 2, percent: number) => void;
 }) {
   const image1 =
     preview1 !== undefined
@@ -1446,8 +1509,9 @@ export function CasebookPage({
                 <ResizableCasePhoto
                   src={image1} alt="관련 사진 1"
                   percent={photoWidthPercent(item.photo1_width_pct)}
-                  onChange={onPhotoWidthChange
-                    ? (width) => onPhotoWidthChange(1, width)
+                  horizontalStretch={photoHorizontalStretch(item.photo1_stretch_x_pct)}
+                  onHorizontalStretch={onPhotoStretchChange
+                    ? (width) => onPhotoStretchChange(1, width)
                     : undefined}
                 />
               )}
@@ -1455,8 +1519,9 @@ export function CasebookPage({
                 <ResizableCasePhoto
                   src={image2} alt="관련 사진 2"
                   percent={photoWidthPercent(item.photo2_width_pct)}
-                  onChange={onPhotoWidthChange
-                    ? (width) => onPhotoWidthChange(2, width)
+                  horizontalStretch={photoHorizontalStretch(item.photo2_stretch_x_pct)}
+                  onHorizontalStretch={onPhotoStretchChange
+                    ? (width) => onPhotoStretchChange(2, width)
                     : undefined}
                 />
               )}

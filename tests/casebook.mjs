@@ -6,11 +6,15 @@ import { createServer } from 'vite';
 const server = await createServer({server:{middlewareMode:true},appType:'custom'});
 const db = new PGlite();
 try {
-  const {parseImport,photoWidthPercent} = await server.ssrLoadModule('/src/lib/casebook.ts');
+  const {parseImport,photoWidthPercent,photoHorizontalStretch} = await server.ssrLoadModule('/src/lib/casebook.ts');
   assert.equal(photoWidthPercent(undefined),100);
   assert.equal(photoWidthPercent(125),100);
   assert.equal(photoWidthPercent(10),45);
   assert.equal(photoWidthPercent(72.4),72);
+  assert.equal(photoHorizontalStretch(undefined),100);
+  assert.equal(photoHorizontalStretch(0),100);
+  assert.equal(photoHorizontalStretch(175.4),175);
+  assert.equal(photoHorizontalStretch(450),300);
   const input = {source_uid:'test:row:1',source_row:2,source_sheet:'test',inspection_type:'교반기',title:'시험 사례',facility:'',standard_title:'기준',standard_body:'요구사항',cause_title:'',cause_body:'확인사항',action_body:'조치',prevention_body:'예방',finding_type:'부적합',test_item:'시험',review_note:'',published:true,review_status:'검토완료',photo1_path:'untrusted.jpg'};
   const parsed = parseImport([input]);
   assert.equal(parsed.rows.length,1);
@@ -35,9 +39,18 @@ try {
   const photoSql = await fs.readFile('supabase/migrations/20261117000000_casebook_photo_size.sql','utf8');
   await db.exec(photoSql);
   await db.exec(photoSql); // additive migration can be safely rerun
+  const stretchSql = await fs.readFile('supabase/migrations/20261117001000_casebook_horizontal_stretch.sql','utf8');
+  await db.exec(stretchSql);
+  await db.exec(stretchSql); // safe to run twice, keeping existing cases
   let legacy=(await db.query('select * from casebook_cases')).rows[0];
   assert.equal(legacy.photo1_path,'keep.jpg'); assert.equal(legacy.published,true);
   assert.equal(legacy.photo1_width_pct,100); assert.equal(legacy.photo2_width_pct,100);
+  assert.equal(legacy.photo1_stretch_x_pct,100); assert.equal(legacy.photo2_stretch_x_pct,100);
+  await db.exec("update casebook_cases set photo1_stretch_x_pct=180 where title='legacy'");
+  await db.exec(stretchSql);
+  const kept=(await db.query("select photo1_stretch_x_pct from casebook_cases where title='legacy'")).rows[0];
+  assert.equal(kept.photo1_stretch_x_pct,180);
+  await assert.rejects(db.exec("update casebook_cases set photo1_stretch_x_pct=301 where title='legacy'"));
   await db.exec(`set role authenticated; set test.admin='true';`);
   const imported = await db.query('select public.import_casebook_cases($1::jsonb) as result',[JSON.stringify([input])]);
   assert.equal(imported.rows[0].result['등록'],1);
