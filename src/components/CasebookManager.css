@@ -1449,3 +1449,96 @@
   text-align: left;
   padding: 8px;
 }
+
+
+/* 품질사례 목록: 원본 사진이 잘리지 않는 전체사진 카드 */
+.case-grid-full-photos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.case-grid-full-photos .case-card-shell .case-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.case-grid-full-photos .case-visual-full {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: stretch;
+  gap: 10px;
+  height: auto;
+  min-height: 260px;
+  padding: 12px;
+  overflow: hidden;
+  background: #f3f6fa;
+}
+.case-grid-full-photos .case-visual-full.has-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.case-grid-full-photos .case-photo-complete {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbe4ee;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.case-grid-full-photos .case-photo-complete img {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 310px;
+  max-height: 310px;
+  padding: 7px;
+  object-fit: contain !important; /* 세로/가로 사진 가장자리를 절대 자르지 않음 */
+  object-position: center;
+  background: #ffffff;
+}
+.case-grid-full-photos .case-photo-complete figcaption {
+  padding: 3px 6px 7px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #52657a;
+  font-weight: 700;
+}
+.case-grid-full-photos .case-photo-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 200px;
+  color: #687a90;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.case-grid-full-photos .case-card-meta {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.case-grid-full-photos .case-card-meta span {
+  position: static;
+  display: inline-block;
+  color: #20466e;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #e9f2fd;
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+.case-grid-full-photos .case-card-meta span.is-reviewed {color: #17643c; background: #e7f7ee;}
+.case-grid-full-photos .case-card-meta span.is-pending {color: #8f5a1c; background: #fff4df;}
+@media (max-width: 900px) {
+  .case-grid-full-photos { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 530px) {
+  .case-grid-full-photos .case-visual-full { min-height: 200px; padding: 8px; gap: 6px; }
+  .case-grid-full-photos .case-photo-complete img { height: 250px; max-height: 250px; }
+}
