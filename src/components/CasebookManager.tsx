@@ -739,15 +739,15 @@ export function CasebookManager({
 
         {showImport && (
           <>
-            <CasebookImport
-              items={items}
-              onComplete={load}
-              disabled={legacySchema}
-            />
             <CasebookTextUpdate
               items={items}
               onComplete={load}
               disabled={legacySchema || loading}
+            />
+            <CasebookImport
+              items={items}
+              onComplete={load}
+              disabled={legacySchema}
             />
           </>
         )}
