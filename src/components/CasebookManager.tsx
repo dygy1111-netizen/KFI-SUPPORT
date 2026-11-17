@@ -22,6 +22,7 @@ import { casebookGroup, compactCasebookProse, photoWidthPercent, photoHorizontal
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 import { CasebookTextUpdate } from "./CasebookTextUpdate";
+import { CasebookLegalUpdate } from "./CasebookLegalUpdate";
 
 type Draft = Omit<
   CasebookCase,
@@ -810,6 +811,11 @@ export function CasebookManager({
         {showImport && (
           <>
             <CasebookTextUpdate
+              items={items}
+              onComplete={load}
+              disabled={legacySchema || loading}
+            />
+            <CasebookLegalUpdate
               items={items}
               onComplete={load}
               disabled={legacySchema || loading}
