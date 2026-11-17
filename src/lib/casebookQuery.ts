@@ -31,14 +31,26 @@ export async function loadCasebook(publicOnly: boolean) {
   }
   const photoStretchReady = !stretchCheck.error;
   const stretchFields = photoStretchReady ? ',photo1_stretch_x_pct,photo2_stretch_x_pct' : '';
+  // The four-photo migration is optional until applied by the Supabase owner.
+  // Do not break existing listings or photo 1/2 editing if the columns are absent.
+  const extraCheck = await supabase.from('casebook_cases')
+    .select('photo3_path,photo4_path,photo3_width_pct,photo4_width_pct,photo3_stretch_x_pct,photo4_stretch_x_pct')
+    .limit(0);
+  if (extraCheck.error && !missingColumn(extraCheck.error)) {
+    return {data:null,error:extraCheck.error,legacy,photoSizeReady,photoStretchReady,extraPhotosReady:false};
+  }
+  const extraPhotosReady = !extraCheck.error;
+  const extraPhotoFields = extraPhotosReady
+    ? ',photo3_path,photo4_path,photo3_width_pct,photo4_width_pct,photo3_stretch_x_pct,photo4_stretch_x_pct'
+    : '';
   const rows: CasebookCase[] = [];
   for (let offset=0; ; offset+=500) {
-    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + photoFields + stretchFields + (legacy ? '' : ',finding_type,test_item') : '*');
+    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + photoFields + stretchFields + extraPhotoFields + (legacy ? '' : ',finding_type,test_item') : '*');
     if (publicOnly && hasPublished) query = query.eq('published',true);
     if (publicOnly && !legacy) query = query.eq('review_status','검토완료');
     const result = await query.order('sort_order').order('case_no').order('id').range(offset,offset+499);
-    if (result.error) return {data:null,error:result.error,legacy,photoSizeReady,photoStretchReady};
-    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,photo1_stretch_x_pct:100,photo2_stretch_x_pct:100,...row}) as CasebookCase));
-    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy,photoSizeReady,photoStretchReady};
+    if (result.error) return {data:null,error:result.error,legacy,photoSizeReady,photoStretchReady,extraPhotosReady};
+    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,photo1_stretch_x_pct:100,photo2_stretch_x_pct:100,photo3_path:null,photo4_path:null,photo3_width_pct:100,photo4_width_pct:100,photo3_stretch_x_pct:100,photo4_stretch_x_pct:100,...row}) as CasebookCase));
+    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy,photoSizeReady,photoStretchReady,extraPhotosReady};
   }
 }

@@ -595,7 +595,7 @@ export function PublicCasebookView({
         {!loading &&
           !error &&
           filtered.length > 0 && (
-          <div className="case-grid case-grid-full-photos">
+          <div className="case-grid case-grid-text-only">
             {filtered.map(
               (item) => (
                 <article
@@ -618,34 +618,9 @@ export function PublicCasebookView({
                       });
                     }}
                   >
-                    <div className={`case-visual case-visual-full ${item.photo1_path && item.photo2_path ? "has-two" : "has-one"}`}>
-                      {item.photo1_path && (
-                        <figure className="case-photo-complete">
-                          <img
-                            src={publicAssetUrl(item.photo1_path)}
-                            alt={`${item.title} 사진 1`}
-                            loading="lazy"
-                          />
-                          {item.photo2_path && <figcaption>사진 1</figcaption>}
-                        </figure>
-                      )}
-                      {item.photo2_path && (
-                        <figure className="case-photo-complete">
-                          <img
-                            src={publicAssetUrl(item.photo2_path)}
-                            alt={`${item.title} 사진 2`}
-                            loading="lazy"
-                          />
-                          <figcaption>사진 2</figcaption>
-                        </figure>
-                      )}
-                      {!item.photo1_path && !item.photo2_path && (
-                        <div className="case-photo-empty">사진 등록 전</div>
-                      )}
-                    </div>
-
                     <div className="case-copy">
                       <div className="case-card-meta">
+                        <span className="case-number-label">사례 {String(item.case_no).padStart(2, "0")}</span>
                         <span>{item.inspection_type}</span>
                         {isAdmin && (
                           <span className={item.review_status === "검토완료" ? "is-reviewed" : "is-pending"}>
