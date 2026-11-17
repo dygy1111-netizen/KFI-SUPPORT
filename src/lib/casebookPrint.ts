@@ -6,14 +6,15 @@
  * 내용이 짧으면 하단 약 25%를 비우고, 긴 사례는 가독성과 한 페이지 수록을 우선합니다.
  */
 
-const SINGLE_PHOTO_MAX_MM = 80;
-const DOUBLE_PHOTO_MAX_MM = 58;
-// 검토완료 사례 PDF 사진 높이: 종전 최대 높이의 70% (115×0.7, 88×0.7).
-const REVIEWED_SINGLE_PHOTO_MAX_MM = 80.5;
-const REVIEWED_DOUBLE_PHOTO_MAX_MM = 61.6;
-// For three or four photos there are two rows, so the height applies per row.
-const MULTI_PHOTO_MAX_MM = 38;
-const REVIEWED_MULTI_PHOTO_MAX_MM = 39;
+// A4 fitting below determines the *actual* size; these are upper limits,
+// not fixed sizes. Taller limits reclaim unused white space for inspection photos.
+const SINGLE_PHOTO_MAX_MM = 115;
+const DOUBLE_PHOTO_MAX_MM = 90;
+const REVIEWED_SINGLE_PHOTO_MAX_MM = 118;
+const REVIEWED_DOUBLE_PHOTO_MAX_MM = 92;
+// Three/four pictures are arranged in two rows.
+const MULTI_PHOTO_MAX_MM = 52;
+const REVIEWED_MULTI_PHOTO_MAX_MM = 54;
 const PHOTO_MIN_MM = 20;
 const MULTI_PHOTO_MIN_MM = 11;
 const TARGET_CONTENT_RATIO = 0.75;
@@ -88,25 +89,67 @@ function ensurePrintStyle() {
       padding-bottom: 2mm;
     }
 
+    /*
+     * Give each printed picture a physical width derived from its aspect ratio
+     * and the A4 height budget. Portraits no longer sit at opposite ends of two
+     * oversized 50%-width columns. The pair stays centred with a narrow gap.
+     */
     .cb-print-only .cb-preview-photos.one {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: center;
       gap: 0;
     }
-
-    .cb-print-only .cb-preview-photos.two,
+    .cb-print-only .cb-preview-photos.one .cb-photo-resize-slot {
+      width: min(100%, calc(var(--print-photo, 80mm) * var(--photo-ratio, 1)));
+      flex: 0 0 auto;
+    }
+    .cb-print-only .cb-preview-photos.two {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      gap: 3mm;
+    }
+    .cb-print-only .cb-preview-photos.two .cb-photo-resize-slot {
+      width: min(calc(50% - 1.5mm), calc(var(--print-photo, 80mm) * var(--photo-ratio, 1)));
+      flex: 0 0 auto;
+    }
     .cb-print-only .cb-preview-photos.multi {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
+      align-items: center;
       justify-items: center;
-      gap: 2mm;
+      gap: 2.5mm;
+    }
+    .cb-print-only .cb-preview-photos.multi .cb-photo-resize-slot {
+      width: min(100%, calc(var(--print-photo, 50mm) * var(--photo-ratio, 1)));
     }
     .cb-print-only .cb-preview-photos.three .cb-photo-resize-slot:last-child {
       grid-column: 1 / -1;
-      width: calc(50% - 1mm);
       justify-self: center;
+    }
+    /* Remove the old invisible 100%-wide frame around a small portrait. */
+    .cb-print-only .cb-preview-photos .cb-photo-resize-slot,
+    .cb-print-only .cb-preview-photos .cb-photo-size-frame {
+      overflow: hidden;
+    }
+    .cb-print-only .cb-preview-photos .cb-photo-size-frame {
+      width: 100% !important;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .cb-print-only .cb-preview-photos .cb-photo-size-frame img {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
+      max-width: 100%;
+      max-height: var(--print-photo, 80mm);
+      object-fit: contain;
+      object-position: center;
+      margin: 0;
+      border: 0;
+      background: transparent;
     }
 
     /*
@@ -467,6 +510,19 @@ export async function prepareCasebookPrint(
       ).map(waitForPhoto),
     ),
   );
+
+  // Ratios must be measured *after* image decode. CSS derives a real printed
+  // photo width from the chosen A4 height and the image's natural dimensions.
+  // This keeps rulers, weld defects and dimensions visible without cropping.
+  pages.forEach(page => {
+    page.querySelectorAll<HTMLImageElement>(".cb-preview-photos img").forEach(img => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        img.closest<HTMLElement>(".cb-photo-resize-slot")
+          ?.style.setProperty("--photo-ratio", ratio.toFixed(6));
+      }
+    });
+  });
 
   const oversized: number[] = [];
   const scales = [
