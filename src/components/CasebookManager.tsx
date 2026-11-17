@@ -18,7 +18,7 @@ import {
 
 import "./CasebookManager.css";
 
-import { casebookGroup, type CasebookCase } from "../lib/casebook";
+import { casebookGroup, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 
@@ -732,6 +732,11 @@ export function CasebookManager({
                     : "새 사례"}
                 </span>
                 <b>{draft.title || "제목을 입력해 주세요"}</b>
+                {sourceCaseNumber(draft) !== null && (
+                  <small style={{ color: "#0f766e", fontWeight: 800 }}>
+                    사진 연결용 원본 순번: {sourceCaseNumber(draft)}
+                  </small>
+                )}
               </div>
 
               {draft.id && (
@@ -820,7 +825,13 @@ export function CasebookManager({
               <legend>사례 기본정보</legend>
               <Field label="시험항목" value={draft.test_item} onChange={v=>update('test_item',v)} rows={1}/>
               <Field label="기준확인필요 사유·검토 메모" value={draft.review_note} onChange={v=>update('review_note',v)}/>
-              {draft.source_uid && <p>원본: {draft.source_sheet} {draft.source_row}행</p>}
+              {draft.source_uid && (
+                <p>
+                  원본 순번 <strong>{sourceCaseNumber(draft) ?? "미확인"}</strong>
+                  {" · "}{draft.source_sheet} 시트 {draft.source_row}행
+                  {" · "}사이트 사례번호 {draft.case_no}
+                </p>
+              )}
 
               <div className="admin-field-grid">
                 <label>
@@ -887,6 +898,25 @@ export function CasebookManager({
 
             <fieldset hidden={editorSection !== "photos"}>
               <legend>관련 사진</legend>
+              {sourceCaseNumber(draft) !== null && (
+                <div
+                  role="note"
+                  style={{
+                    background: "#fff7db",
+                    border: "1px solid #f0d78a",
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                    marginBottom: 12,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <strong>사진 파일 확인: 엑셀 원본 순번 {sourceCaseNumber(draft)}</strong>
+                  <div style={{ fontSize: 13 }}>
+                    사진연결_노란색 시트의 원본 순번을 기준으로 사진을 찾아 첨부하세요.
+                    사이트 사례번호 {draft.case_no}와 다를 수 있습니다.
+                  </div>
+                </div>
+              )}
 
               <div className="cb-photo-input-grid">
                 <PhotoInput
@@ -1143,6 +1173,7 @@ export function CasebookManager({
                     <span>
                       사례 {String(item.case_no).padStart(2, "0")} ·{" "}
                       {casebookGroup(item.inspection_type)} · {item.inspection_type}
+                      {sourceCaseNumber(item) !== null && ` · 원본 순번 ${sourceCaseNumber(item)}`}
                     </span>
                     <b>{item.title}</b>
                     <small>{item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
