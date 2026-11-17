@@ -1244,20 +1244,40 @@
   flex: none; background: #fff; border: 1px solid #ccd7e3; border-radius: 6px;
   padding: 6px 8px; color: #315477; font-size: 0.74rem; font-weight: 800;
 }
-.cb-photo-resize-slot { width: 100%; min-width: 0; display: flex; justify-content: center; align-items: center; }
-.cb-photo-size-frame { position: relative; min-width: 0; max-width: 100%; flex: none; }
-.cb-preview-photos .cb-photo-size-frame img { display: block; max-height: 320px; max-width: 100%; }
+.cb-photo-resize-slot {
+  width: 100%; min-width: 0; display: flex; justify-content: center; align-items: center;
+  overflow: hidden; /* stretched pixels cannot overlap a second photo or the table border */
+}
+.cb-photo-size-frame {
+  position: relative; min-width: 0; max-width: 100%; flex: none;
+  display: flex; justify-content: center; align-items: center;
+  overflow: hidden;
+}
+/* Real image bounds are fitted to height first. scaleX then widens the pixels, not an empty frame. */
+.cb-preview-photos .cb-photo-size-frame img {
+  display: block; flex: 0 1 auto; width: auto; height: auto;
+  max-height: 320px; max-width: 100%; transform-origin: center center;
+}
 .cb-preview-photos.two .cb-photo-size-frame img { max-height: 260px; }
 .content-section .cb-a4-page .cb-preview-photos .cb-photo-size-frame img { max-height: 360px; }
 .content-section .cb-a4-page .cb-preview-photos.two .cb-photo-size-frame img { max-height: 280px; }
 .cb-photo-drag-handle {
-  position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 27px; height: 27px;
+  position: absolute; right: 5px; bottom: 5px; z-index: 4; width: 30px; height: 30px;
   background: #2465a8; color: #fff; border: 2px solid #fff; border-radius: 7px;
-  box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: nwse-resize; touch-action: none;
+  box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: ew-resize; touch-action: none;
   user-select: none; font-weight: 900;
 }
+.cb-photo-stretch-control {
+  border: 1px solid #b3d4f6; background: #ecf5ff;
+  padding: 8px; border-radius: 7px;
+}
 .cb-photo-drag-handle:focus-visible { outline: 3px solid #ffbd42; outline-offset: 2px; }
-.cb-print-only .cb-preview-photos .cb-photo-size-frame img { max-height: var(--print-photo, 80mm); }
+.cb-print-only .cb-preview-photos .cb-photo-size-frame img {
+  width: auto; height: auto;
+  max-width: 100%; max-height: var(--print-photo, 80mm);
+  object-fit: contain;
+  transform-origin: center center;
+}
 @media print { .cb-photo-drag-handle { display: none !important; } }
 
 /* ============================================
