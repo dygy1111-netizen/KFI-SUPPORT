@@ -22,14 +22,23 @@ export async function loadCasebook(publicOnly: boolean) {
   if (photoCheck.error && !missingColumn(photoCheck.error)) return {data:null,error:photoCheck.error,legacy,photoSizeReady:false};
   const photoSizeReady = !photoCheck.error;
   const photoFields = photoSizeReady ? ',photo1_width_pct,photo2_width_pct' : '';
+  // Horizontal stretch is a separate optional migration. Never hide legacy cases
+  // if the new columns have not been installed yet.
+  const stretchCheck = await supabase.from('casebook_cases')
+    .select('photo1_stretch_x_pct,photo2_stretch_x_pct').limit(0);
+  if (stretchCheck.error && !missingColumn(stretchCheck.error)) {
+    return {data:null,error:stretchCheck.error,legacy,photoSizeReady,photoStretchReady:false};
+  }
+  const photoStretchReady = !stretchCheck.error;
+  const stretchFields = photoStretchReady ? ',photo1_stretch_x_pct,photo2_stretch_x_pct' : '';
   const rows: CasebookCase[] = [];
   for (let offset=0; ; offset+=500) {
-    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + photoFields + (legacy ? '' : ',finding_type,test_item') : '*');
+    let query = supabase.from('casebook_cases').select(publicOnly ? publicFields + photoFields + stretchFields + (legacy ? '' : ',finding_type,test_item') : '*');
     if (publicOnly && hasPublished) query = query.eq('published',true);
     if (publicOnly && !legacy) query = query.eq('review_status','검토완료');
     const result = await query.order('sort_order').order('case_no').order('id').range(offset,offset+499);
-    if (result.error) return {data:null,error:result.error,legacy,photoSizeReady};
-    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,...row}) as CasebookCase));
-    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy,photoSizeReady};
+    if (result.error) return {data:null,error:result.error,legacy,photoSizeReady,photoStretchReady};
+    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,photo1_stretch_x_pct:100,photo2_stretch_x_pct:100,...row}) as CasebookCase));
+    if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy,photoSizeReady,photoStretchReady};
   }
 }
