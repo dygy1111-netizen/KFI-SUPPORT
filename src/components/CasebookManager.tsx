@@ -1013,6 +1013,12 @@ export function CasebookManager({
                 사진 아래 가로 조절 막대 또는 오른쪽 A4 미리보기의 파란 ↔ 손잡이를 드래그합니다.
                 기본값 100%는 원본 비율을 유지합니다.
               </p>
+              {!extraPhotosReady && (
+                <p role="note" className="cb-photo-resize-help">
+                  사진 3·4를 사용하려면 Supabase의 <strong>20261117002000_casebook_four_photos.sql</strong>을
+                  한 번 실행하세요. 적용 전에도 사진 1·2는 정상 작동합니다.
+                </p>
+              )}
               <div className="cb-photo-input-grid">
                 <PhotoInput
                   label="사진 1"
@@ -1057,8 +1063,42 @@ export function CasebookManager({
                       update("photo2_stretch_x_pct", 100);
                     }
                   }}
-                  onRemove={() => void removePhoto(2)}
+                  onRemove={() => removePhoto(2)}
                 />
+                {extraPhotosReady && (
+                  <>
+                    <PhotoInput
+                      label="사진 3"
+                      preview={preview3}
+                      file={files.photo3}
+                      originalNumber={sourceCaseNumber(draft)}
+                      widthPct={photoWidthPercent(draft.photo3_width_pct)}
+                      stretchPct={photoHorizontalStretch(draft.photo3_stretch_x_pct)}
+                      onWidthChange={value => update("photo3_width_pct", value)}
+                      onStretchChange={value => update("photo3_stretch_x_pct", value)}
+                      onFile={file => {
+                        setFiles(current => ({...current, photo3:file}));
+                        if (file) setDraft(current => ({...current, photo3_width_pct:100, photo3_stretch_x_pct:100}));
+                      }}
+                      onRemove={() => removePhoto(3)}
+                    />
+                    <PhotoInput
+                      label="사진 4"
+                      preview={preview4}
+                      file={files.photo4}
+                      originalNumber={sourceCaseNumber(draft)}
+                      widthPct={photoWidthPercent(draft.photo4_width_pct)}
+                      stretchPct={photoHorizontalStretch(draft.photo4_stretch_x_pct)}
+                      onWidthChange={value => update("photo4_width_pct", value)}
+                      onStretchChange={value => update("photo4_stretch_x_pct", value)}
+                      onFile={file => {
+                        setFiles(current => ({...current, photo4:file}));
+                        if (file) setDraft(current => ({...current, photo4_width_pct:100, photo4_stretch_x_pct:100}));
+                      }}
+                      onRemove={() => removePhoto(4)}
+                    />
+                  </>
+                )}
               </div>
 
               <Field
@@ -1213,9 +1253,13 @@ export function CasebookManager({
               } as CasebookCase}
               preview1={preview1}
               preview2={preview2}
-              onPhotoStretchChange={photoStretchReady
-                ? (slot, width) => update(slot === 1 ? "photo1_stretch_x_pct" : "photo2_stretch_x_pct", width)
-                : undefined}
+              preview3={preview3}
+              preview4={preview4}
+              onPhotoStretchChange={(slot, width) => {
+                if (slot >= 3 ? extraPhotosReady : photoStretchReady) {
+                  setDraft(current => ({...current, [`photo${slot}_stretch_x_pct`]: width}));
+                }
+              }}
               refs={{
                 title: titleRef,
                 photo: photoRef,
@@ -1294,7 +1338,7 @@ export function CasebookManager({
                       {sourceCaseNumber(item) !== null && ` · 원본 순번 ${sourceCaseNumber(item)}`}
                     </span>
                     <b>{item.title}</b>
-                    <small>{item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {item.photo1_path || item.photo2_path?'사진 있음':'사진 없음'}</small>
+                    <small>{item.test_item} · {item.review_status} · {item.published?'공개':'비공개'} · {PHOTO_SLOTS.some(slot => item[`photo${slot}_path`])?'사진 있음':'사진 없음'}</small>
                     {item.review_note && <p>{item.review_note}</p>}
                   </div>
 
@@ -1511,6 +1555,8 @@ export function CasebookPage({
   item,
   preview1,
   preview2,
+  preview3,
+  preview4,
   pageNumber = 1,
   refs,
   onPhotoStretchChange,
@@ -1519,18 +1565,19 @@ export function CasebookPage({
   pageNumber?: number;
   preview1?: string;
   preview2?: string;
+  preview3?: string;
+  preview4?: string;
   refs?: PreviewRefs;
-  onPhotoStretchChange?: (slot: 1 | 2, percent: number) => void;
+  onPhotoStretchChange?: (slot: PhotoSlot, percent: number) => void;
 }) {
-  const image1 =
-    preview1 !== undefined
-      ? preview1
-      : publicAssetUrl(item.photo1_path);
-
-  const image2 =
-    preview2 !== undefined
-      ? preview2
-      : publicAssetUrl(item.photo2_path);
+  const overrides: Array<string | undefined> = [preview1, preview2, preview3, preview4];
+  const images = PHOTO_SLOTS.map((slot, index) => ({
+    slot,
+    src: overrides[index] !== undefined
+      ? overrides[index]!
+      : publicAssetUrl(item[`photo${slot}_path`]),
+  })).filter(x => x.src);
+  const count = images.length;
 
   return (
     <article className="cb-a4-page">
@@ -1555,36 +1602,23 @@ export function CasebookPage({
 
         <CaseRow label={"관련 사진\n(현장 사례)"}>
           <div className="cb-photo-area">
-            <div
-              className={`cb-preview-photos ${
-                image1 && image2 ? "two" : "one"
-              }`}
-            >
-              {image1 && (
+            <div className={`cb-preview-photos ${
+              count === 1 ? "one" : count === 2 ? "two" : count === 3 ? "three multi" : "four multi"
+            }`}>
+              {images.map(({slot, src}) => (
                 <ResizableCasePhoto
-                  src={image1} alt="관련 사진 1"
-                  percent={photoWidthPercent(item.photo1_width_pct)}
-                  horizontalStretch={photoHorizontalStretch(item.photo1_stretch_x_pct)}
+                  key={slot}
+                  src={src}
+                  alt={`관련 사진 ${slot}`}
+                  percent={photoWidthPercent(item[`photo${slot}_width_pct`])}
+                  horizontalStretch={photoHorizontalStretch(item[`photo${slot}_stretch_x_pct`])}
                   onHorizontalStretch={onPhotoStretchChange
-                    ? (width) => onPhotoStretchChange(1, width)
+                    ? (width) => onPhotoStretchChange(slot, width)
                     : undefined}
                 />
-              )}
-              {image2 && (
-                <ResizableCasePhoto
-                  src={image2} alt="관련 사진 2"
-                  percent={photoWidthPercent(item.photo2_width_pct)}
-                  horizontalStretch={photoHorizontalStretch(item.photo2_stretch_x_pct)}
-                  onHorizontalStretch={onPhotoStretchChange
-                    ? (width) => onPhotoStretchChange(2, width)
-                    : undefined}
-                />
-              )}
-
-              {!image1 && !image2 && (
-                <div className="cb-photo-placeholder">
-                  관련 사진 삽입 영역
-                </div>
+              ))}
+              {count === 0 && (
+                <div className="cb-photo-placeholder">관련 사진 삽입 영역</div>
               )}
             </div>
 
