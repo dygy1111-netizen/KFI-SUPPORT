@@ -284,6 +284,7 @@ export function CasebookManager({
   const originalTitle = useRef<string | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
   const [legacySchema, setLegacySchema] = useState(false);
+  const [photoSizeReady, setPhotoSizeReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -346,8 +347,9 @@ export function CasebookManager({
   const load = async () => {
     setLoading(true);
 
-    const { data, error, legacy } = await loadCasebook(false);
+    const { data, error, legacy, photoSizeReady: supported } = await loadCasebook(false);
     setLegacySchema(legacy);
+    setPhotoSizeReady(supported === true);
 
     if (error) {
       notify(error.message, true);
@@ -491,8 +493,10 @@ export function CasebookManager({
         facility: draft.facility.trim(),
         photo1_path: photo1Path,
         photo2_path: photo2Path,
-        photo1_width_pct: photoWidthPercent(draft.photo1_width_pct),
-        photo2_width_pct: photoWidthPercent(draft.photo2_width_pct),
+        ...(photoSizeReady ? {
+          photo1_width_pct: photoWidthPercent(draft.photo1_width_pct),
+          photo2_width_pct: photoWidthPercent(draft.photo2_width_pct),
+        } : {}),
         photo_caption: draft.photo_caption.trim(),
         photo_note: draft.photo_note.trim(),
         standard_title: draft.standard_title.trim(),
@@ -926,6 +930,13 @@ export function CasebookManager({
                 </div>
               )}
 
+              {!photoSizeReady && (
+                <p role="alert" className="cb-photo-resize-help">
+                  사진 크기 저장 기능은 데이터베이스 준비 후 사용할 수 있습니다.
+                  Supabase에 사진 크기 저장용 SQL을 먼저 적용하세요.
+                  사진 첨부 및 기존 사례 수정은 계속 가능합니다.
+                </p>
+              )}
               <p className="cb-photo-resize-help">
                 처음에는 사진칸에 자동으로 맞춥니다. 사진을 선택한 후 크기 조절 막대나
                 오른쪽 A4 미리보기의 파란색 모서리를 마우스로 드래그하여 크기를 조절할 수 있습니다.
@@ -937,7 +948,9 @@ export function CasebookManager({
                   file={files.photo1}
                   originalNumber={sourceCaseNumber(draft)}
                   widthPct={photoWidthPercent(draft.photo1_width_pct)}
-                  onWidthChange={(value) => update("photo1_width_pct", value)}
+                  onWidthChange={photoSizeReady
+                    ? (value) => update("photo1_width_pct", value)
+                    : undefined}
                   onFile={(file) => {
                     setFiles((current) => ({...current, photo1: file}));
                     if (file) update("photo1_width_pct", 100);
@@ -951,7 +964,9 @@ export function CasebookManager({
                   file={files.photo2}
                   originalNumber={sourceCaseNumber(draft)}
                   widthPct={photoWidthPercent(draft.photo2_width_pct)}
-                  onWidthChange={(value) => update("photo2_width_pct", value)}
+                  onWidthChange={photoSizeReady
+                    ? (value) => update("photo2_width_pct", value)
+                    : undefined}
                   onFile={(file) => {
                     setFiles((current) => ({...current, photo2: file}));
                     if (file) update("photo2_width_pct", 100);
@@ -1112,9 +1127,9 @@ export function CasebookManager({
               } as CasebookCase}
               preview1={preview1}
               preview2={preview2}
-              onPhotoWidthChange={(slot, width) =>
-                update(slot === 1 ? "photo1_width_pct" : "photo2_width_pct", width)
-              }
+              onPhotoWidthChange={photoSizeReady
+                ? (slot, width) => update(slot === 1 ? "photo1_width_pct" : "photo2_width_pct", width)
+                : undefined}
               refs={{
                 title: titleRef,
                 photo: photoRef,
@@ -1251,7 +1266,7 @@ function PhotoInput({
   onRemove: () => void;
   originalNumber: number | null;
   widthPct: number;
-  onWidthChange: (value: number) => void;
+  onWidthChange?: (value: number) => void;
 }) {
   return (
     <div className="cb-photo-input">
@@ -1286,7 +1301,7 @@ function PhotoInput({
         </small>
       </label>
 
-      {preview && (
+      {preview && onWidthChange && (
         <div className="cb-photo-size-control">
           <label>
             <span>표시 크기 {widthPct}%</span>
