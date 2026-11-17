@@ -24,7 +24,16 @@ export function CasebookImport({items, onComplete, disabled=false}: {items:Caseb
     <p>JSON을 검토한 뒤 한 번에 저장합니다. 신규 사례는 비공개이며, 기존 사례의 문안·사진·검토 상태는 보존하고 원본 참조만 갱신합니다.</p>
     <input aria-label="사례 JSON 파일" type="file" accept=".json,application/json" disabled={busy} onChange={async e=>{
       setRows([]);setErrors([]);setResult('');const f=e.target.files?.[0];if(!f)return;
-      try {if(f.size>10_000_000)throw new Error('파일은 10MB 이하만 가능합니다.');const parsed=parseImport(JSON.parse(await f.text()));setRows(parsed.rows);setErrors(parsed.errors);}
+      try {
+        if(f.size>10_000_000)throw new Error('파일은 10MB 이하만 가능합니다.');
+        const json: unknown = JSON.parse(await f.text());
+        if (Array.isArray(json) && json.length > 0 &&
+          typeof json[0] === 'object' && json[0] !== null &&
+          'action_body' in json[0] && !('inspection_type' in json[0])) {
+          throw new Error("이 파일은 146건 문안 수정용 JSON입니다. 사례 등록이 아닌 '개선조치·예방대책 일괄 수정'에서 업로드하세요.");
+        }
+        const parsed=parseImport(json);setRows(parsed.rows);setErrors(parsed.errors);
+      }
       catch(err){setErrors([err instanceof Error ? err.message : '파일을 읽지 못했습니다.']);}
       e.target.value='';
     }}/>
