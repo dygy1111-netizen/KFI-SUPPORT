@@ -18,7 +18,7 @@ import {
 
 import "./CasebookManager.css";
 
-import { casebookGroup, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, type CasebookCase } from "../lib/casebook";
+import { casebookGroup, photoWidthPercent, photoHorizontalStretch, sourceCaseNumber, PHOTO_SLOTS, type PhotoSlot, type CasebookCase } from "../lib/casebook";
 import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 import { CasebookTextUpdate } from "./CasebookTextUpdate";
@@ -33,6 +33,12 @@ type Draft = Omit<
 type PhotoFiles = {
   photo1: File | null;
   photo2: File | null;
+  photo3: File | null;
+  photo4: File | null;
+};
+
+const EMPTY_FILES: PhotoFiles = {
+  photo1: null, photo2: null, photo3: null, photo4: null,
 };
 
 type LineState = {
@@ -59,10 +65,16 @@ const EMPTY_DRAFT: Draft = {
   facility: "",
   photo1_path: null,
   photo2_path: null,
+  photo3_path: null,
+  photo4_path: null,
   photo1_width_pct: 100,
   photo2_width_pct: 100,
+  photo3_width_pct: 100,
+  photo4_width_pct: 100,
   photo1_stretch_x_pct: 100,
   photo2_stretch_x_pct: 100,
+  photo3_stretch_x_pct: 100,
+  photo4_stretch_x_pct: 100,
   photo_caption: "",
   photo_note: "",
   standard_title: "",
@@ -278,10 +290,7 @@ export function CasebookManager({
 }: CasebookManagerProps = {}) {
   const [items, setItems] = useState<CasebookCase[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [files, setFiles] = useState<PhotoFiles>({
-    photo1: null,
-    photo2: null,
-  });
+  const [files, setFiles] = useState<PhotoFiles>(EMPTY_FILES);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const originalTitle = useRef<string | null>(null);
@@ -289,6 +298,7 @@ export function CasebookManager({
   const [legacySchema, setLegacySchema] = useState(false);
   const [photoSizeReady, setPhotoSizeReady] = useState(false);
   const [photoStretchReady, setPhotoStretchReady] = useState(false);
+  const [extraPhotosReady, setExtraPhotosReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -342,6 +352,10 @@ export function CasebookManager({
 
   const preview2 = useMemo(() => files.photo2 ? URL.createObjectURL(files.photo2) : publicAssetUrl(draft.photo2_path), [files.photo2, draft.photo2_path]);
   useEffect(() => () => { if (files.photo2) URL.revokeObjectURL(preview2); }, [files.photo2, preview2]);
+  const preview3 = useMemo(() => files.photo3 ? URL.createObjectURL(files.photo3) : publicAssetUrl(draft.photo3_path), [files.photo3, draft.photo3_path]);
+  useEffect(() => () => { if (files.photo3) URL.revokeObjectURL(preview3); }, [files.photo3, preview3]);
+  const preview4 = useMemo(() => files.photo4 ? URL.createObjectURL(files.photo4) : publicAssetUrl(draft.photo4_path), [files.photo4, draft.photo4_path]);
+  useEffect(() => () => { if (files.photo4) URL.revokeObjectURL(preview4); }, [files.photo4, preview4]);
 
   const notify = (text: string, error = false) => {
     setMessage(text);
@@ -351,10 +365,11 @@ export function CasebookManager({
   const load = async () => {
     setLoading(true);
 
-    const { data, error, legacy, photoSizeReady: supported, photoStretchReady: stretchSupported } = await loadCasebook(false);
+    const { data, error, legacy, photoSizeReady: supported, photoStretchReady: stretchSupported, extraPhotosReady: extrasSupported } = await loadCasebook(false);
     setLegacySchema(legacy);
     setPhotoSizeReady(supported === true);
     setPhotoStretchReady(stretchSupported === true);
+    setExtraPhotosReady(extrasSupported === true);
 
     if (error) {
       notify(error.message, true);
@@ -391,7 +406,7 @@ export function CasebookManager({
 
     initialSelectionRef.current = initialCaseId;
     setDraft({ ...selected });
-    setFiles({ photo1: null, photo2: null });
+    setFiles(EMPTY_FILES);
     notify("");
   }, [initialCaseId, items]);
 
@@ -437,10 +452,14 @@ export function CasebookManager({
       ...item,
       photo1_width_pct: photoWidthPercent(item.photo1_width_pct),
       photo2_width_pct: photoWidthPercent(item.photo2_width_pct),
+      photo3_width_pct: photoWidthPercent(item.photo3_width_pct),
+      photo4_width_pct: photoWidthPercent(item.photo4_width_pct),
       photo1_stretch_x_pct: photoHorizontalStretch(item.photo1_stretch_x_pct),
       photo2_stretch_x_pct: photoHorizontalStretch(item.photo2_stretch_x_pct),
+      photo3_stretch_x_pct: photoHorizontalStretch(item.photo3_stretch_x_pct),
+      photo4_stretch_x_pct: photoHorizontalStretch(item.photo4_stretch_x_pct),
     });
-    setFiles({ photo1: null, photo2: null });
+    setFiles(EMPTY_FILES);
     notify("");
     if (scroll) {
       window.requestAnimationFrame(() =>
@@ -454,7 +473,7 @@ export function CasebookManager({
 
   const createNew = () => {
     setDraft(nextDraft(items));
-    setFiles({ photo1: null, photo2: null });
+    setFiles(EMPTY_FILES);
     setEditorSection("basic");
     notify("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -481,15 +500,34 @@ export function CasebookManager({
     const savedId = draft.id;
 
     try {
+      if (!extraPhotosReady && (files.photo3 || files.photo4)) {
+        throw new Error("먼저 Supabase에서 사진 4장 확장 SQL을 실행하세요.");
+      }
+      const uploadedPaths: string[] = [];
       let photo1Path = draft.photo1_path;
       let photo2Path = draft.photo2_path;
-
-      if (files.photo1) {
-        photo1Path = await uploadCasebookImage(files.photo1);
-      }
-
-      if (files.photo2) {
-        photo2Path = await uploadCasebookImage(files.photo2);
+      let photo3Path = draft.photo3_path;
+      let photo4Path = draft.photo4_path;
+      try {
+        if (files.photo1) {
+          photo1Path = await uploadCasebookImage(files.photo1);
+          uploadedPaths.push(photo1Path);
+        }
+        if (files.photo2) {
+          photo2Path = await uploadCasebookImage(files.photo2);
+          uploadedPaths.push(photo2Path);
+        }
+        if (extraPhotosReady && files.photo3) {
+          photo3Path = await uploadCasebookImage(files.photo3);
+          uploadedPaths.push(photo3Path);
+        }
+        if (extraPhotosReady && files.photo4) {
+          photo4Path = await uploadCasebookImage(files.photo4);
+          uploadedPaths.push(photo4Path);
+        }
+      } catch (uploadError) {
+        await Promise.allSettled(uploadedPaths.map(path => removePublicFile(path)));
+        throw uploadError;
       }
 
       const payload = {
@@ -500,6 +538,14 @@ export function CasebookManager({
         facility: draft.facility.trim(),
         photo1_path: photo1Path,
         photo2_path: photo2Path,
+        ...(extraPhotosReady ? {
+          photo3_path: photo3Path,
+          photo4_path: photo4Path,
+          photo3_width_pct: photoWidthPercent(draft.photo3_width_pct),
+          photo4_width_pct: photoWidthPercent(draft.photo4_width_pct),
+          photo3_stretch_x_pct: photoHorizontalStretch(draft.photo3_stretch_x_pct),
+          photo4_stretch_x_pct: photoHorizontalStretch(draft.photo4_stretch_x_pct),
+        } : {}),
         ...(photoSizeReady ? {
           photo1_width_pct: photoWidthPercent(draft.photo1_width_pct),
           photo2_width_pct: photoWidthPercent(draft.photo2_width_pct),
@@ -529,12 +575,23 @@ export function CasebookManager({
 
       const { error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        await Promise.allSettled(uploadedPaths.map(path => removePublicFile(path)));
+        throw error;
+      }
       const old = items.find(item => item.id === draft.id);
-      await Promise.allSettled([old?.photo1_path && old.photo1_path !== photo1Path ? removePublicFile(old.photo1_path) : Promise.resolve(), old?.photo2_path && old.photo2_path !== photo2Path ? removePublicFile(old.photo2_path) : Promise.resolve()]);
+      await Promise.allSettled([
+        ...PHOTO_SLOTS.map(slot => {
+          const oldPath = old?.[`photo${slot}_path`];
+          const newPath = ({1:photo1Path, 2:photo2Path, 3:photo3Path, 4:photo4Path} as const)[slot];
+          return oldPath && oldPath !== newPath
+            ? removePublicFile(oldPath)
+            : Promise.resolve();
+        }),
+      ]);
 
       const loaded = await load();
-      setFiles({ photo1: null, photo2: null });
+      setFiles(EMPTY_FILES);
       if (loaded) {
         const ordered = [...loaded].sort(
           (a, b) =>
@@ -594,14 +651,14 @@ export function CasebookManager({
 
       if (error) throw error;
 
-      await Promise.allSettled([removePublicFile(item.photo1_path), removePublicFile(item.photo2_path)]);
+      await Promise.allSettled(PHOTO_SLOTS.map(slot => removePublicFile(item[`photo${slot}_path`])));
       setSelectedIds((current) =>
         current.filter((id) => id !== item.id),
       );
 
       if (draft.id === item.id) {
         setDraft(nextDraft(items.filter((row) => row.id !== item.id)));
-        setFiles({ photo1: null, photo2: null });
+        setFiles(EMPTY_FILES);
       }
 
       await load();
@@ -618,23 +675,13 @@ export function CasebookManager({
     }
   };
 
-  const removePhoto = async (slot: 1 | 2) => {
-    const path =
-      slot === 1 ? draft.photo1_path : draft.photo2_path;
-
-    if (!path && !(slot === 1 ? files.photo1 : files.photo2)) {
-      return;
-    }
-
-    if (slot === 1) {
-      setFiles((current) => ({ ...current, photo1: null }));
-      setDraft((current) => ({ ...current, photo1_path: null }));
-    } else {
-      setFiles((current) => ({ ...current, photo2: null }));
-      setDraft((current) => ({ ...current, photo2_path: null }));
-    }
-
-    // 실제 Storage 삭제는 사례 저장 시 경로 교체 또는 사례 삭제 때 처리됩니다.
+  const removePhoto = (slot: PhotoSlot) => {
+    const fileKey = `photo${slot}` as const;
+    const pathKey = `photo${slot}_path` as const;
+    if (!draft[pathKey] && !files[fileKey]) return;
+    setFiles(current => ({...current, [fileKey]: null}));
+    setDraft(current => ({...current, [pathKey]: null}));
+    // Storage 원본은 저장 완료 후에만 삭제합니다.
   };
 
   const toggleSelected = (id: number) => {
