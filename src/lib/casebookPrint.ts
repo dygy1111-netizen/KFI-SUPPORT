@@ -11,7 +11,11 @@ const DOUBLE_PHOTO_MAX_MM = 58;
 // 검토완료 사례 PDF 사진 높이: 종전 최대 높이의 70% (115×0.7, 88×0.7).
 const REVIEWED_SINGLE_PHOTO_MAX_MM = 80.5;
 const REVIEWED_DOUBLE_PHOTO_MAX_MM = 61.6;
+// For three or four photos there are two rows, so the height applies per row.
+const MULTI_PHOTO_MAX_MM = 38;
+const REVIEWED_MULTI_PHOTO_MAX_MM = 39;
 const PHOTO_MIN_MM = 20;
+const MULTI_PHOTO_MIN_MM = 11;
 const TARGET_CONTENT_RATIO = 0.75;
 // '품질사례 > 검토완료 사례 PDF'는 하단 약 13.5%를 남기는 것을 우선합니다.
 const REVIEWED_TARGET_CONTENT_RATIO = 0.865;
@@ -91,12 +95,18 @@ function ensurePrintStyle() {
       gap: 0;
     }
 
-    .cb-print-only .cb-preview-photos.two {
+    .cb-print-only .cb-preview-photos.two,
+    .cb-print-only .cb-preview-photos.multi {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
       justify-items: center;
       gap: 2mm;
+    }
+    .cb-print-only .cb-preview-photos.three .cb-photo-resize-slot:last-child {
+      grid-column: 1 / -1;
+      width: calc(50% - 1mm);
+      justify-self: center;
     }
 
     /*
@@ -125,24 +135,21 @@ function ensurePrintStyle() {
     }
 
     /*
-     * 사진 1장: 가용 사진칸 너비를 모두 사용.
-     * 사진 2장: 같은 크기의 두 프레임에 나란히 표시.
-     * 원본을 변형하지 않고 중앙 기준으로 가장자리만 일부 잘라냅니다.
+     * All reviewed photographs are fitted inside their cells WITHOUT cropping.
+     * The former object-fit:cover clipped tall tank and weld photos.
+     * A user-selected horizontal stretch (scaleX) remains independent.
      */
-    .cb-print-only[data-print-mode="reviewed"]
-    .cb-preview-photos.one img,
-    .cb-print-only[data-print-mode="reviewed"]
-    .cb-preview-photos.two img {
+    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos img {
       box-sizing: border-box;
-      width: 100%;
-      height: var(--print-photo, 61.6mm);
+      width: auto;
+      height: auto;
       min-width: 0;
       min-height: 0;
       max-width: 100%;
-      max-height: var(--print-photo, 61.6mm);
-      object-fit: cover;
+      max-height: var(--print-photo, 80mm);
+      object-fit: contain;
       object-position: center;
-      margin: 0;
+      margin: 0 auto;
       background: transparent;
       border: 0;
     }
@@ -164,6 +171,10 @@ function ensurePrintStyle() {
       border-radius: 0;
     }
 
+    /* Two photo rows share the A4 height budget. */
+    .cb-print-only .cb-preview-photos.multi .cb-photo-size-frame img {
+      max-height: var(--print-photo, 39mm);
+    }
     .cb-print-only .cb-photo-area { gap: 1mm; }
     .cb-print-only .cb-photo-copy:empty { display: none; }
 
@@ -469,12 +480,14 @@ export async function prepareCasebookPrint(
       '.cb-print-only[data-print-mode="reviewed"]',
     ) !== null;
     const photoMax =
-      count === 1
-        ? (reviewed ? REVIEWED_SINGLE_PHOTO_MAX_MM : SINGLE_PHOTO_MAX_MM)
-        : count >= 2
+      count >= 3
+        ? (reviewed ? REVIEWED_MULTI_PHOTO_MAX_MM : MULTI_PHOTO_MAX_MM)
+        : count === 2
           ? (reviewed ? REVIEWED_DOUBLE_PHOTO_MAX_MM : DOUBLE_PHOTO_MAX_MM)
-          : 0;
-    const photoMin = count ? PHOTO_MIN_MM : 0;
+          : count === 1
+            ? (reviewed ? REVIEWED_SINGLE_PHOTO_MAX_MM : SINGLE_PHOTO_MAX_MM)
+            : 0;
+    const photoMin = count >= 3 ? MULTI_PHOTO_MIN_MM : count ? PHOTO_MIN_MM : 0;
     const initialPad = reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM;
 
     let fitted = false;
