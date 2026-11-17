@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type { CasebookCase } from './casebook';
 
-const publicFields = 'id,case_no,inspection_type,title,facility,photo1_path,photo2_path,photo_caption,photo_note,standard_title,standard_body,cause_title,cause_body,action_body,prevention_body,sort_order';
+const publicFields = 'id,case_no,inspection_type,title,facility,photo1_path,photo2_path,photo1_width_pct,photo2_width_pct,photo_caption,photo_note,standard_title,standard_body,cause_title,cause_body,action_body,prevention_body,sort_order';
 const missingColumn = (error: {code?:string} | null) => error?.code === '42703' || error?.code === 'PGRST204';
 
 /** Legacy compatibility never falls back after an authorization or network error. */
@@ -23,7 +23,7 @@ export async function loadCasebook(publicOnly: boolean) {
     if (publicOnly && !legacy) query = query.eq('review_status','검토완료');
     const result = await query.order('sort_order').order('case_no').order('id').range(offset,offset+499);
     if (result.error) return {data:null,error:result.error,legacy};
-    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,...row}) as CasebookCase));
+    rows.push(...(result.data as unknown as Record<string, unknown>[] || []).map(row => ({finding_type:'',test_item:'',source_uid:null,source_row:null,source_sheet:'',review_note:'',review_status:'검토완료',published:true,photo1_width_pct:100,photo2_width_pct:100,...row}) as CasebookCase));
     if ((result.data?.length || 0)<500) return {data:rows,error:null,legacy};
   }
 }
