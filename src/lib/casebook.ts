@@ -44,6 +44,16 @@ export type ImportCase = Omit<
   "id" | "created_at" | "updated_at"
 >;
 
+/** 엑셀 report 시트의 원본 순번. 가져오기 사례번호와는 별개입니다. */
+export function sourceCaseNumber(
+  item: Pick<CasebookCase, "source_row" | "source_sheet">,
+): number | null {
+  const sourceRow = Number(item.source_row);
+  return item.source_sheet === "report" && Number.isInteger(sourceRow) && sourceRow >= 2
+    ? sourceRow - 1
+    : null;
+}
+
 /**
  * 위험물제품 검사 종류
  */
