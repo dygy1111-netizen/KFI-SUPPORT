@@ -94,3 +94,20 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
     </Sheet>
   </>;
 }
+
+/** Refuse to print edited pages which would clip text rather than silently
+ * truncating the publication. The administrator can shorten the relevant part. */
+export function validateBookLayout(root:HTMLElement) {
+  for(const sheet of Array.from(root.querySelectorAll<HTMLElement>(".kb-sheet"))){
+    const body=sheet.querySelector<HTMLElement>(".kb-body");
+    const footer=sheet.querySelector<HTMLElement>(".kb-running");
+    if(body&&footer&&(body.scrollHeight>body.clientHeight+2||body.scrollWidth>body.clientWidth+2||body.getBoundingClientRect().bottom>footer.getBoundingClientRect().top+1)){
+      throw new Error("사례집 구성 편집: '"+(sheet.querySelector(".kb-title")?.textContent||"개요")+"' 페이지의 문안이 한 장을 초과합니다. 문안을 줄여 주세요.");
+    }
+  }
+  const main=root.querySelector<HTMLElement>(".kb-cover-main");
+  const bottom=root.querySelector<HTMLElement>(".kb-cover-bottom");
+  if(main&&bottom&&(main.getBoundingClientRect().bottom>bottom.getBoundingClientRect().top-8||main.scrollWidth>main.clientWidth+2)){
+    throw new Error("표지 문안이 너무 깁니다. 사례집 구성 편집에서 줄여 주세요.");
+  }
+}
