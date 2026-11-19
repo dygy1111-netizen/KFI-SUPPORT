@@ -49,10 +49,135 @@ export function bookSectionKey(value: string): string {
   return BOOK_PARTS.flatMap(p => p.sections).find(s => s.aliases.some(a => normalize(a) === v))?.key ?? "other:" + v;
 }
 
+// Presentation-only grouping: the stored inspection category, test item, and case
+// number remain unchanged. Fixed orders follow the equipment from roof to base
+// and then associated installations, or product structure to functional tests.
+type TopicRule = { label: string; match: RegExp };
+const topic = (label: string, match: RegExp): TopicRule => ({label,match});
+const TANK_TOPICS = [
+  topic("지붕", /지붕|루프|roof|부상지붕|통기관|화염방지|인화방지망|비상압력배출|대기밸브/i),
+  topic("옆판", /옆판|측판|측벽|shell|보온재/i),
+  topic("밑판", /밑판|바닥판|저판|annular|애뉼러|환상판/i),
+  topic("기초", /기초|지반|침하|전기방식|전위측정/i),
+  topic("비파괴시험", /비파괴|용접부.*(?:결함|균열)|침투탐상|자분탐상|방사선투과|초음파탐상/i),
+  topic("계단·사다리", /계단|사다리|난간/),
+  topic("부속설비", /부속설비|액면계|레벨게이지|압력게이지|배관|밸브/),
+  topic("방유제", /방유제|방유턱|간막이둑|배수관/),
+  topic("펌프설비", /펌프설비|펌프실|펌프/),
+  topic("소화설비", /소화설비|소화전|물분무|폼미형성|폼형성|소방배관/),
+  topic("피뢰설비 및 접지시설", /피뢰|접지/),
+  topic("표지 및 게시판", /표지|게시판|표시사항/),
+  topic("위치·구조 및 설비", /위치|구조|설비|보유공지/),
+];
+const PRODUCT_TOPICS = [
+  topic("구조", /^(?:일반)?구조|형식|구조검사/),
+  topic("외관", /외관|외부상태/),
+  topic("표시사항", /표시사항|표시검사|표지/),
+  topic("두께 및 재료", /^(?:재료|두께측정|판두께|강판두께)/),
+  topic("비파괴시험", /비파괴|침투탐상|자분탐상|방사선투과|초음파탐상|용접부검사/),
+  topic("도막두께시험", /도막|도장두께/),
+  topic("낙하시험", /낙하/),
+  topic("기밀·누설시험", /기밀|누설시험|누수시험/),
+  topic("수압·내압시험", /수압|내압|압력시험|파열압력/),
+  topic("작동·성능시험", /작동|성능|감지센서|개폐|유량|유속|방출/),
+];
+
+// Only very clear titles may repair the *display grouping* of a mislabeled
+// record. For example, a roof seal is not a nondestructive test.
+const TANK_TITLE_OVERRIDES = [
+  topic("피뢰설비 및 접지시설", /접지저항|피뢰설비|탱크접지/),
+  topic("소화설비", /^폼(?:미형성|형성불량)$|^(?:포|고정포)?소화설비|^물분무설비|^보조포소화전/),
+  topic("지붕", /(?:외부|내부)?부상지붕.*(?:실링|실미설치|실파손)/),
+  topic("계단·사다리", /^계단.*(?:파손|부식)|^사다리.*(?:파손|부식)/),
+];
+const OTHER_SUBTOPICS: TopicRule[] = [];
+const SUBTOPICS: Record<string, TopicRule[]> = {
+  "지붕": [
+    topic("지붕판", /지붕판|두께|천공|관통결함|지붕부적합/),
+    topic("부상지붕·실링", /부상지붕|림부분|실링|실미설치|실파손/),
+    topic("통기관·안전장치", /통기관|인화방지망|화염방지|대기밸브|비상압력배출/),
+  ],
+  "옆판": [
+    topic("옆판·부식", /두께|부식|도장|보온재|실링/),
+    topic("개구부·플랜지", /개구부|플랜지|노즐/),
+    topic("연결부", /연결|용접부|사다리/),
+  ],
+  "밑판": [topic("부식·두께·관통결함", /두께|부식|관통/)],
+  "기초": [topic("전기방식", /전기방식|전위측정/)],
+  "비파괴시험": [
+    topic("개구부", /개구부|노즐/),
+    topic("옆판·밑판 용접부", /옆판|밑판|바닥판/),
+    topic("결함", /결함|균열/),
+    topic("시험 누락", /누락|미실시/),
+  ],
+  "방유제": [
+    topic("구조·파손", /파손|균열|높이|바닥|이음부/),
+    topic("관통배관·마감", /관통|마감|실링|막음/),
+    topic("배수·개폐밸브", /개폐밸브|배수관|배수설비/),
+    topic("존치물", /존치|미허가|허가받지/),
+  ],
+  "소화설비": [
+    topic("고정포·포소화설비", /고정포|포소화설비|폼|포소화약제탱크/),
+    topic("보조포소화전", /보조포소화전/),
+    topic("물분무설비", /물분무/),
+  ],
+  "펌프설비": [
+    topic("누설", /누설|누수|seal/i),
+    topic("방유턱·설치", /방유턱|펌프실|턱|존치/),
+  ],
+  "피뢰설비 및 접지시설": [
+    topic("접지저항", /접지저항|탱크접지|피뢰설비/),
+  ],
+  "구조": [
+    topic("형식 불일치", /불일치|형식/),
+    topic("안전장치", /안전변|안전장치/),
+    topic("연결·작동", /가스켓|개폐|표시기/),
+  ],
+  "외관": [
+    topic("파렛트", /파렛트|팔레트|파레트/),
+    topic("보호구조", /상부틀|핸드레일|보호틀/),
+    topic("부식·도장", /부식|도장/),
+    topic("용접부", /용접부/),
+  ],
+};
+const cleanTopic = (s?: string | null) => (s ?? "").trim().replace(/\s+/g,"");
+function topicIndex(rules: TopicRule[], value: string) {
+  return rules.findIndex(rule => rule.match.test(value));
+}
+function topicOrder(item: CasebookCase) {
+  const sectionKey=bookSectionKey(item.inspection_type);
+  const tank=["safety","precision","interim","completion"].includes(sectionKey);
+  const rules=tank ? TANK_TOPICS : PRODUCT_TOPICS;
+  const title=cleanTopic(item.title);
+  const testItem=cleanTopic(item.test_item) || cleanTopic(item.facility?.split("·")[1]);
+  // Match specific items before broad "설비" or "배관" patterns.
+  const exact=rules.findIndex(rule=>cleanTopic(rule.label)===testItem);
+  let idx=exact>=0?exact:topicIndex(rules,testItem);
+  if(tank){
+    const explicit=TANK_TITLE_OVERRIDES.find(rule=>rule.match.test(title));
+    if(explicit)idx=rules.findIndex(rule=>rule.label===explicit.label);
+  }
+  if(idx<0)idx=topicIndex(rules,title);
+  const label=idx<0?(testItem||"기타"):rules[idx].label;
+  const subRules=SUBTOPICS[label]??OTHER_SUBTOPICS;
+  const subIndex=topicIndex(subRules,title);
+  return {
+    rank: idx<0?rules.length:idx,
+    label,
+    subRank:subIndex<0?subRules.length:subIndex,
+  };
+}
+
 export function bookCompare(a: CasebookCase, b: CasebookCase): number {
   const keys = BOOK_PARTS.flatMap(p => p.sections.map(s => s.key));
   const rank = (x: CasebookCase) => { const i = keys.indexOf(bookSectionKey(x.inspection_type)); return i < 0 ? keys.length : i; };
-  return rank(a) - rank(b) || a.case_no - b.case_no || a.sort_order - b.sort_order || a.id - b.id;
+  const aSection=bookSectionKey(a.inspection_type),bSection=bookSectionKey(b.inspection_type);
+  const sectionDifference=rank(a)-rank(b)||aSection.localeCompare(bSection,"ko");
+  if(sectionDifference)return sectionDifference;
+  const x=topicOrder(a),y=topicOrder(b);
+  return x.rank-y.rank || x.label.localeCompare(y.label,"ko") ||
+    x.subRank-y.subRank ||
+    a.case_no-b.case_no || a.sort_order-b.sort_order || a.id-b.id;
 }
 
 // Keep expanded table-of-contents type readable even when all 13 categories are present.
