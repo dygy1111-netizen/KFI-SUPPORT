@@ -7,7 +7,7 @@ const server = await createServer({server:{middlewareMode:true},appType:'custom'
 const db = new PGlite();
 try {
   const {parseImport,photoWidthPercent,photoHorizontalStretch,casebookPhotoPaths} = await server.ssrLoadModule('/src/lib/casebook.ts');
-  const {planCasebook,bookSectionKey,BOOK_PARTS,TOC_SECTIONS_PER_PAGE} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
+  const {planCasebook,bookSectionKey,bookCompare,BOOK_PARTS,TOC_SECTIONS_PER_PAGE} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
   assert.equal(bookSectionKey("탱크 완공검사"),"completion");
   assert.equal(bookSectionKey("위치표시밸브"),"indicator");
   const bookRows = [
@@ -23,6 +23,32 @@ try {
   assert.equal(book.parts[0].sections[0].page,3);
   assert.equal(book.finalPage,12);
   assert.equal(book.unknown.length,1);
+  // Interleaved tank areas and product tests must stay together in both
+  // list sorting and the book plan, without changing original case numbers.
+  const mk=(id,inspection_type,test_item,title)=>({id,case_no:id,sort_order:0,inspection_type,test_item,title,facility:""});
+  const groupedRows=[
+    mk(1,"정밀정기검사","소화설비","포소화설비 작동불량"),
+    mk(2,"정밀정기검사","옆판","개구부 플랜지 누설"),
+    mk(3,"정밀정기검사","지붕","통기관에 화염방지장치 미설치"),
+    mk(4,"정밀정기검사","밑판","밑판 두께 미달"),
+    mk(5,"정밀정기검사","지붕","외부부상지붕 실 파손"),
+    mk(6,"정밀정기검사","비파괴시험","외부부상지붕 실 미설치"),
+    mk(7,"정밀정기검사","소화설비","물분무설비 노즐 막힘"),
+    mk(8,"정밀정기검사","소화설비","포소화설비 배관 파손"),
+    mk(9,"정밀정기검사","지붕","접지저항 측정값 기준 초과"),
+    mk(10,"운반용기","외관","하부 파렛트 파손"),
+    mk(11,"운반용기","기밀시험","운반용기 누설"),
+    mk(12,"운반용기","외관","상부틀 파손"),
+    mk(13,"운반용기","외관","하부파렛트 파손"),
+    mk(14,"정밀정기검사","비파괴시험","개구부 용접부 결함"),
+    mk(15,"정밀정기검사","기초","전기방식장치 측정 불가"),
+    mk(16,"정밀정기검사","방유제","관통배관 마감 불량"),
+  ];
+  const expected=[5,6,3,2,4,15,14,16,1,8,7,9,10,13,12,11];
+  assert.deepEqual([...groupedRows].sort(bookCompare).map(x=>x.id),expected);
+  assert.deepEqual(planCasebook(groupedRows).parts.flatMap(p=>p.sections.flatMap(s=>s.cases.map(c=>c.id))),expected);
+  assert.deepEqual(groupedRows.map(x=>x.case_no),Array.from({length:16},(_,i)=>i+1));
+
   const allSections=BOOK_PARTS.flatMap(p=>p.sections).map((s,i)=>({id:i+1,case_no:i+1,sort_order:0,inspection_type:s.title}));
   const fullBook=planCasebook(allSections);
   assert.equal(TOC_SECTIONS_PER_PAGE,12);
