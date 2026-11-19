@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { CasebookCase } from "../lib/casebook";
 import { planCasebook, type PlannedPart, type PlannedSection } from "../lib/casebookBook";
 import "./CasebookBook.css";
@@ -86,7 +86,7 @@ export function CasebookBook({items,renderCase}:Props) {
     </Sheet>
     {plan.parts.flatMap(part=>part.sections.flatMap(section=>[
       <Intro key={"intro-"+section.key} part={part} section={section}/>,
-      ...section.cases.map((item,i)=><div key={"case-"+item.id} style={{display:"contents"}}>{renderCase(item,section.page+i+1)}</div>)
+      ...section.cases.map((item,i)=><Fragment key={"case-"+item.id}>{renderCase(item,section.page+i+1)}</Fragment>)
     ]))}
     <Sheet page={plan.finalPage} label="발간정보" className="kb-colophon">
       <div className="kb-eyebrow">PUBLICATION INFORMATION</div><h1 className="kb-title">발간정보</h1>
