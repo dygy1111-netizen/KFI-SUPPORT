@@ -18,6 +18,17 @@ try {
   const article=React.createElement;
   const markup=renderToStaticMarkup(article(CasebookBook,{items,renderCase:(item,page)=>article('article',{className:'cb-a4-page'},'샘플 사례 '+page+' '+item.inspection_type)}));
   assert.ok(!markup.includes('kb-cover-art'));
+  const {parseBookText,validateBookText}=await server.ssrLoadModule('/src/lib/casebookBookText.ts');
+  const text=parseBookText({cover:{year:"2027",title:"편집 표지"},toc:{title:"편집 목차"},overview:{lead:"편집 개요"},parts:{"01":{title:"편집 대분류"}},sections:{safety:{title:"편집 검사명",procedure:["편집 절차 1","편집 절차 2"]}},colophon:{title:"편집 발간정보"}});
+  assert.equal(validateBookText(text).length,0);
+  const editedMarkup=renderToStaticMarkup(article(CasebookBook,{items,text,renderCase:(item,page)=>article('article',{className:'cb-a4-page'},'샘플 사례 '+page)}));
+  for(const term of ["2027년","편집 표지","편집 목차","편집 개요","편집 대분류","편집 검사명","편집 절차 1","편집 발간정보"])assert.ok(editedMarkup.includes(term),term);
+  assert.equal((editedMarkup.match(/class="cb-a4-page/g)||[]).length,plan.finalPage+1);
+  assert.equal((editedMarkup.match(/편집 검사명/g)||[]).length,2);
+  const preview=renderToStaticMarkup(article(CasebookBook,{items,text,frontMatterOnly:true,renderCase:()=>{throw new Error("Unexpected case page in preview")}}));
+  assert.ok(preview.includes("편집 절차 2"));
+  assert.equal((preview.match(/class="cb-a4-page/g)||[]).length,plan.finalPage+1-items.length);
+
   const base=await fs.readFile('src/components/CasebookManager.css','utf8');
   // Verify offline fallback typography too; the production stylesheet uses pinned Pretendard.
   const book=(await fs.readFile('src/components/CasebookBook.css','utf8')).replace(/^@import[^;]+;/,'');
@@ -41,6 +52,12 @@ try {
     assert.match(geometry,/data-screen-qa="PASS"/,'Screen image dimensions failed at '+viewport+': '+(geometry.match(/data-issues="[^"]*"/)||[])[0]);
   }
   console.log('PASS: responsive one-to-four-photo web detail matches PDF proportions; desktop and mobile.');
+  const zoomFile=path.join(temp,'zoom.html');
+  await fs.writeFile(zoomFile,'<!doctype html><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0}'+base+'</style><section class="content-section" style="width:1180px;max-width:100%">'+[0.5,1,1.16].map((scale,i)=>'<div class="public-casebook-zoom-wrap cb-whole-page-zoom zoom-'+['small','normal','large'][i]+'" style="--cb-page-scale:'+scale+';--cb-page-base-width:920px">'+caseMarkup.split('</article>')[2]+'</article></div>').join('')+'</section><script>const pages=[...document.querySelectorAll(".cb-whole-page-zoom .cb-a4-page")];const near=(a,b)=>Math.abs(a-b)<0.02;const boxes=pages.map(p=>p.getBoundingClientRect());const photo=pages.map(p=>p.querySelector("img").getBoundingClientRect());const ok=near(boxes[0].width/boxes[1].width,.5)&&near(boxes[0].height/boxes[1].height,.5)&&near(boxes[2].width/boxes[1].width,1.16)&&near(photo[0].width/photo[1].width,.5)&&near(photo[0].height/photo[1].height,.5);document.body.dataset.zoomQa=ok?"PASS":"FAIL";</script>');
+  const zoomResult=execFileSync(chrome,[...args,'--window-size=1440,1000','--dump-dom',pathToFileURL(zoomFile).href],{encoding:'utf8',timeout:60000});
+  assert.match(zoomResult,/data-zoom-qa="PASS"/,"Full page zoom does not scale the document and photographs together");
+  console.log('PASS: full-page screen zoom and edited book content with automatic pagination.');
+
 
   execFileSync(chrome,[...args,'--print-to-pdf='+pdf,url],{timeout:60000});
   const info=execFileSync('pdfinfo',[pdf],{encoding:'utf8'});

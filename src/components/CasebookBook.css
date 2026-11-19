@@ -1,7 +1,7 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css");
 
 /* Print-only publication design. Case tables, photographs and editor are unchanged. */
-.cb-print-only .kb-sheet,.cb-print-only .kb-cover {
+.cb-print-only .kb-sheet,.cb-print-only .kb-cover,.kb-book-preview .kb-sheet,.kb-book-preview .kb-cover {
   font-family: "Pretendard", "NanumBarunGothic", "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", sans-serif;
   font-weight: 400;
   letter-spacing: -.018em;
@@ -78,3 +78,28 @@
 .cb-review-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px}
 .cb-review-filter button{border:1px solid #cbd5e1;border-radius:7px;padding:8px 12px;background:#fff;color:#425468;font-weight:700;cursor:pointer}
 .cb-review-filter button[aria-pressed="true"]{background:#23496b;color:#fff;border-color:#23496b}
+
+.kb-edit-lines { white-space: pre-line; }
+.kb-banner-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.kb-editor-backdrop { position:fixed; inset:0; z-index:10000; background:#12243888; padding:20px; display:flex; align-items:stretch; justify-content:center; }
+.kb-editor { width:min(1040px,100%); background:white; overflow:auto; border-radius:12px; padding:24px; color:#203b50; box-shadow:0 12px 40px #12243844; }
+.kb-editor>header { display:flex; gap:12px; align-items:flex-start; justify-content:space-between; }
+.kb-editor>header h2 { margin:0; font-size:1.5rem; }
+.kb-editor>header p { color:#607587; }
+.kb-editor>nav,.kb-edit-tools { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0; }
+.kb-editor>nav button { border:1px solid #cad5e0; background:#f5f8fa; border-radius:6px; padding:9px 14px; color:#28475b; cursor:pointer; }
+.kb-editor>nav button[aria-pressed=true] { background:#1e415a; color:white; border-color:#1e415a; }
+.kb-edit-tools { border-block:1px solid #e3e9ee; }
+.kb-edit-fields { display:grid; gap:14px; padding:16px 0; }
+.kb-edit-field { display:grid; gap:6px; font-size:.94rem; font-weight:600; }
+.kb-edit-field input,.kb-edit-field select,.kb-edit-field textarea { width:100%; box-sizing:border-box; font:inherit; font-weight:400; border:1px solid #c7d4de; border-radius:6px; padding:10px; color:#263b4a; background:white; resize:vertical; }
+.kb-edit-fields fieldset { border:1px solid #d4dfe6; border-radius:8px; display:grid; gap:8px; padding:12px; }
+.kb-edit-error,.kb-edit-success { padding:12px; white-space:pre-wrap; }
+.kb-edit-error { background:#fff0ef; color:#a52e28; }.kb-edit-success {background:#edf7ef;color:#23633c;}
+.kb-editor-preview { background:#e7edf2; padding:12px; overflow:auto; }
+.kb-book-preview { width:max-content; margin:auto; }
+.kb-book-preview .cb-a4-page { box-sizing:border-box; width:210mm; height:297mm; max-width:none; min-height:0; margin:0 auto 16px; padding:0; border:0; box-shadow:0 2px 8px #203b5033; }
+.kb-editor button:disabled { opacity:.5; cursor:not-allowed; }
+@media(max-width:720px){ .kb-editor-backdrop{padding:0} .kb-editor{border-radius:0;padding:14px} }
+
+.kb-editor-check{position:fixed;left:-100000px;top:0;visibility:hidden;pointer-events:none;overflow:visible;width:max-content;}

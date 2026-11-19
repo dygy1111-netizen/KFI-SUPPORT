@@ -1,6 +1,7 @@
 import { prepareCasebookPrint } from '../lib/casebookPrint';
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,7 +23,10 @@ import "./CasebookManager.css";
 import { loadCasebook } from '../lib/casebookQuery';
 import { sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { CasebookManager, CasebookPage } from "./CasebookManager";
-import { CasebookBook } from "./CasebookBook";
+import { CasebookBook, validateBookLayout } from "./CasebookBook";
+import { CasebookTextEditor } from "./CasebookTextEditor";
+import { DEFAULT_BOOK_TEXT, type BookText } from "../lib/casebookBookText";
+import { loadBookText } from "../lib/casebookBookTextStore";
 import { bookCompare, groupCasebookCases, planCasebook } from "../lib/casebookBook";
 
 type ZoomLevel =
@@ -69,7 +73,7 @@ export function PublicCasebookView({
   const [
     zoom,
     setZoom,
-  ] = useState<ZoomLevel>("normal");
+  ] = useState<ZoomLevel>("small");
 
 
   const [retry, setRetry] = useState(0);
@@ -78,7 +82,79 @@ export function PublicCasebookView({
   const [reviewFilter,setReviewFilter] = useState("전체");
   const [editing, setEditing] = useState<CasebookCase | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
+  const [printText,setPrintText]=useState<BookText>(DEFAULT_BOOK_TEXT);
+  const [bookEditor,setBookEditor]=useState(false);
   const originalTitle = useRef<string | null>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const zoomWrapRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [pageScale, setPageScale] = useState(1);
+  const [baseWidth, setBaseWidth] = useState(920);
+
+  // CSS zoom scales the entire page AND its layout box, unlike a transform
+  // or changing only the text. Measure the current case, including late
+  // photo/font loads, and fit the complete page into the usable viewport.
+  useLayoutEffect(() => {
+    if (!selected) return;
+    const wrap = zoomWrapRef.current;
+    const toolbar = toolbarRef.current;
+    if (!wrap || !toolbar) return;
+    const page = wrap.querySelector<HTMLElement>(".cb-a4-page");
+    if (!page) return;
+    let frame = 0;
+    let cancelled = false;
+    const update = () => {
+      if (cancelled) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (cancelled || !page.isConnected) return;
+        const availableWidth = wrap.clientWidth;
+        if (availableWidth <= 0) return;
+        const width = Math.min(920, availableWidth);
+        setBaseWidth(old => Math.abs(old-width) > 0.5 ? width : old);
+        // Read the unscaled page height using the actual current CSS zoom.
+        const applied = parseFloat(getComputedStyle(page).zoom) || 1;
+        const height = page.getBoundingClientRect().height / applied;
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const toolbarHeight = toolbar.getBoundingClientRect().height;
+        // Reserve space for the site's navigation, the toolbar and bottom gap.
+        const topOfPage = Math.max(0, detailRef.current?.getBoundingClientRect().top ?? 0);
+        const usableHeight = Math.max(200, viewportHeight - toolbarHeight - topOfPage - 28);
+        const widthLimit = availableWidth / width;
+        const scale = zoom === "small"
+          ? Math.min(0.78, usableHeight / Math.max(1,height), widthLimit)
+          : Math.min(zoom === "large" ? 1.16 : 1, widthLimit);
+        const rounded = Math.max(0.05, Math.floor(scale*1000)/1000);
+        setPageScale(old => Math.abs(old-rounded) >= 0.002 ? rounded : old);
+      });
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(wrap);
+    observer.observe(page);
+    observer.observe(toolbar);
+    window.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
+    wrap.addEventListener("load", update, true);
+    void document.fonts.ready.then(update);
+    update();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("resize", update);
+      wrap.removeEventListener("load", update, true);
+    };
+  }, [selected, zoom]);
+
+  // Case details omit the tall landing-page hero; start with the toolbar.
+  useLayoutEffect(() => {
+    if (!selected) return;
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo({top:0, behavior:"instant"});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selected?.id]);
 
   useEffect(() => {
     let active = true;
@@ -94,6 +170,7 @@ export function PublicCasebookView({
         setIsAdmin(false);
         setAuthReady(true);
         setEditing(null);
+        setBookEditor(false);
         return;
       }
 
@@ -250,7 +327,7 @@ export function PublicCasebookView({
     ],
   );
 
-  const printReviewedCases = () => {
+  const printReviewedCases = async () => {
     const targets = items
       .filter(
         (item) => item.review_status === "검토완료" && item.published,
@@ -262,6 +339,7 @@ export function PublicCasebookView({
       return;
     }
 
+    try { setPrintText((await loadBookText()).text); } catch (error) {setError(error instanceof Error ? error.message : "사례집 설정을 불러오지 못했습니다.");return;}
     originalTitle.current = document.title;
     document.title = "위험물시설_품질관리_사례집";
     setPrintItems(targets);
@@ -285,6 +363,7 @@ export function PublicCasebookView({
         if (printRoot?.querySelectorAll(".cb-a4-page").length !== plan.finalPage + 1) {
           throw new Error("사례집 목차와 실제 인쇄 페이지가 일치하지 않습니다.");
         }
+        validateBookLayout(printRoot!);
         await prepareCasebookPrint(pages);
       } catch (error) {
         setError(error instanceof Error ? error.message : "출력을 준비하지 못했습니다.");
@@ -302,6 +381,7 @@ export function PublicCasebookView({
 
   const overlays = (
     <>
+      {isAdmin && bookEditor && createPortal(<CasebookTextEditor items={items} onClose={()=>setBookEditor(false)}/>,document.body)}
       {editing &&
         createPortal(
           <div
@@ -345,7 +425,7 @@ export function PublicCasebookView({
       {printItems.length > 0 &&
         createPortal(
           <div className="cb-print-only" data-print-mode="reviewed">
-            <CasebookBook items={printItems}
+            <CasebookBook items={printItems} text={printText}
               renderCase={(item,page)=><CasebookPage item={item} pageNumber={page}/>}/>
           </div>,
           document.body,
@@ -357,34 +437,20 @@ export function PublicCasebookView({
   if (selected) {
     return (
       <>
-        <section className="page-hero">
-          <div className="hero-inner">
-            <h1>
-              {config.casesTitle}
-            </h1>
-
-            <p>
-              {config.casesText}
-            </p>
-          </div>
-        </section>
-
-
         <section
-          className="content-section compact"
+          className="content-section compact cb-detail-section"
+          ref={detailRef}
           style={{
             maxWidth: "1180px",
           }}
         >
-          <div className="public-casebook-toolbar">
+          <div className="public-casebook-toolbar" ref={toolbarRef}>
             <div className="public-casebook-toolbar-actions">
               <button
                 type="button"
                 className="secondary-button"
                 onClick={() => {
                   setSelected(null);
-
-                  setZoom("normal");
 
                   window.scrollTo({
                     top: 0,
@@ -409,7 +475,7 @@ export function PublicCasebookView({
 
             <div className="public-casebook-zoom">
               <span>
-                화면 크기
+                페이지 크기
               </span>
 
               <button
@@ -423,7 +489,7 @@ export function PublicCasebookView({
                   setZoom("small")
                 }
               >
-                작게
+                작게 (한눈에)
               </button>
 
               <button
@@ -458,7 +524,9 @@ export function PublicCasebookView({
 
 
           <div
-            className={`public-casebook-zoom-wrap zoom-${zoom}`}
+            ref={zoomWrapRef}
+            className={`public-casebook-zoom-wrap zoom-${zoom} cb-whole-page-zoom`}
+            style={{"--cb-page-scale":pageScale,"--cb-page-base-width":`${baseWidth}px`} as React.CSSProperties}
           >
             <CasebookPage item={selected} />
           </div>
@@ -497,13 +565,7 @@ export function PublicCasebookView({
               </small>
             </div>
 
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={printReviewedCases}
-            >
-              검토완료 사례 PDF
-            </button>
+            <div className="kb-banner-actions"><button type="button" className="secondary-button" onClick={()=>setBookEditor(true)}>사례집 구성 편집</button><button type="button" className="secondary-button" onClick={()=>void printReviewedCases()}>검토완료 사례 PDF</button></div>
           </div>
         )}
 
@@ -623,13 +685,6 @@ export function PublicCasebookView({
                     className="case-card"
                     onClick={() => {
                       setSelected(item);
-
-                      setZoom("normal");
-
-                      window.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                      });
                     }}
                   >
                     <div className="case-copy">

@@ -884,31 +884,14 @@ export function AdminPanel({
             save={() =>
               void run(
                 async () => {
-                  const {
-                    error:
-                      updateError,
-                  } =
-                    await supabase
-                      .from(
-                        "site_config",
-                      )
-                      .update({
-                        config,
-
-                        updated_at:
-                          new Date().toISOString(),
-                      })
-                      .eq(
-                        "id",
-                        1,
-                      );
-
-
-                  if (
-                    updateError
-                  ) {
-                    throw updateError;
-                  }
+                  const latest=await supabase.from("site_config").select("config,updated_at").eq("id",1).single();
+                  if(latest.error)throw latest.error;
+                  const next={...latest.data.config,...config};
+                  if(latest.data.config?.casebookBookText!==undefined)next.casebookBookText=latest.data.config.casebookBookText;
+                  else delete next.casebookBookText;
+                  const result=await supabase.from("site_config").update({config:next,updated_at:new Date().toISOString()})
+                    .eq("id",1).eq("updated_at",latest.data.updated_at).select("id").single();
+                  if(result.error)throw result.error;
                 },
 
                 "사이트 문구가 저장되었습니다.",
