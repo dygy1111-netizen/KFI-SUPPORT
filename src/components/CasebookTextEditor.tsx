@@ -24,7 +24,7 @@ export function CasebookTextEditor({items,onClose}:{items:CasebookCase[];onClose
   useEffect(()=>{void reload();},[]);
   const close=()=>{if(!dirty||confirm("저장하지 않은 수정 내용을 닫으시겠습니까?"))onClose();};
   const save=async()=>{setBusy(true);setFailed(false);try{const errors=validateBookText(text);if(errors.length)throw new Error(errors.join("\n"));setRevision(await saveBookText(text,revision));setDirty(false);setMessage("저장 완료. 다음 PDF 출력부터 반영됩니다.");}catch(e){setFailed(true);setMessage(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
-  const lines=(value:string)=>value.split("\n").map(x=>x.trim()).filter(Boolean);
+  const lines=(value:string)=>value.split("\n");
   const se=text.sections[sectionKey];
   const sectionField=(key:keyof typeof se,value:string|string[])=>patch({...text,sections:{...text.sections,[sectionKey]:{...se,[key]:value}}});
   const coverLabels={label:"상단 문구",year:"제작년도 (숫자 4자리)",title:"제목 첫 줄",subtitle:"제목 둘째 줄",deck:"표지 설명",organization:"제작기관",department:"담당부서"};
