@@ -86,7 +86,7 @@ function ensurePrintStyle() {
     .cb-print-only .cb-table-content:has(.cb-photo-area) {
       min-width: 0;
       justify-content: flex-start;
-      padding: var(--print-photo-pad, 1mm) !important;
+      padding: var(--print-photo-pad, 2mm) !important;
     }
 
     /* Stretch only non-photo table rows. The photo cell and its label are
@@ -346,7 +346,7 @@ function applyScale(
   // photo size does not vary when text needs to be fitted.
   page.style.setProperty("--print-photo", (PRINT_PHOTO_HEIGHT_MM / scale).toFixed(4) + "mm");
   page.style.setProperty("--print-label-width", (28 / scale).toFixed(4) + "mm");
-  page.style.setProperty("--print-photo-pad", (1 / scale).toFixed(4) + "mm");
+  page.style.setProperty("--print-photo-pad", (2 / scale).toFixed(4) + "mm");
   page.style.setProperty("--print-photo-gap", (PRINT_PHOTO_GAP_MM / scale).toFixed(4) + "mm");
 
   const reviewed = page.closest(
