@@ -55,6 +55,8 @@ export function bookCompare(a: CasebookCase, b: CasebookCase): number {
   return rank(a) - rank(b) || a.case_no - b.case_no || a.sort_order - b.sort_order || a.id - b.id;
 }
 
+// Keep expanded table-of-contents type readable even when all 13 categories are present.
+export const TOC_SECTIONS_PER_PAGE = 12;
 export type PlannedSection = BookSection & { cases: CasebookCase[]; page: number };
 export type PlannedPart = Omit<BookPart, "sections"> & { sections: PlannedSection[] };
 export function planCasebook(items: CasebookCase[]) {
@@ -65,9 +67,9 @@ export function planCasebook(items: CasebookCase[]) {
     const names = [...new Set(unknown.map(i => i.inspection_type.trim()))];
     parts.push({number:"04",title:"기타 분류",subtitle:"검사구분 확인이 필요한 사례",sections:names.map((name,i)=>({...section("other:"+i,name || "미분류",[],"기존 검사구분을 유지하여 누락 없이 수록","해당 사례의 검사기준 참고",["사례별 적용 기준 및 등록된 검사구분 확인"],[],facilitySource),cases:unknown.filter(x=>x.inspection_type.trim()===name),page:0}))});
   }
-  // Cover unnumbered; TOC page 1, overview page 2. Split TOC at 15 sections.
+  // Cover unnumbered; TOC page 1, overview page 2. Split TOC at twelve sections.
   const entries = parts.flatMap(p => p.sections);
-  const tocPages = Math.max(1, Math.ceil(entries.length / 15));
+  const tocPages = Math.max(1, Math.ceil(entries.length / TOC_SECTIONS_PER_PAGE));
   let page = tocPages + 2;
   for(const p of parts) for(const s of p.sections) { s.page=page; page+=1+s.cases.length; }
   return {parts, tocPages, overviewPage:tocPages+1, finalPage:page, total:items.length, unknown, empty:BOOK_PARTS.flatMap(p=>p.sections).filter(s=>!sorted.some(i=>bookSectionKey(i.inspection_type)===s.key)).map(s=>s.title)};
