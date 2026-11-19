@@ -4,6 +4,7 @@ export type SectionText = Pick<BookSection,"title"|"summary"|"basis"|"checks"|"p
 export type BookText = {
   cover: {label:string; year:string; title:string; subtitle:string; deck:string; organization:string; department:string};
   toc: {title:string; description:string};
+  parts: Record<string,{title:string;subtitle:string}>;
   overview: {title:string; lead:string; purpose:string; systems:{title:string;description:string;detail:string}[]; usage:string[]; note:string; source:string};
   colophon: {title:string; website:string; note:string};
   sections: Record<string,SectionText>;
@@ -11,6 +12,7 @@ export type BookText = {
 export const DEFAULT_BOOK_TEXT: BookText = {
   cover:{label:"위험물 안전관리 기술자료",year:"2026",title:"위험물시설",subtitle:"품질관리 사례집",deck:"검사 현장의 주요 지적 사례와\n개선조치 및 재발 방지대책",organization:"한국소방산업기술원",department:"위험물검사부"},
   toc:{title:"목차",description:"검사별 개요 및 업무 처리 흐름"},
+  parts:Object.fromEntries(BOOK_PARTS.map(p=>[p.number,{title:p.title,subtitle:p.subtitle}])),
   overview:{
     title:"위험물안전관리 및\n검사업무 개요",lead:"시설 및 제품의 전 과정에 걸친 안전성 확보",
     purpose:"위험물시설 및 제품의 검사 과정에서 확인된 주요 지적사항을 유형별로 정리하고, 적용 검사기준과 개선·예방대책을 공유하여 현장 품질관리 및 유사 결함의 재발 방지에 활용",
@@ -45,6 +47,8 @@ export function validateBookText(text:BookText){
   const errors:string[]=[];
   if(!/^\d{4}$/.test(text.cover.year))errors.push("제작년도는 네 자리 숫자로 입력하세요.");
   for(const key of ["label","title","subtitle","organization","department"] as const)if(!text.cover[key].trim())errors.push("표지 필수 문구를 입력하세요: "+key);
+  if(!text.toc.title.trim()||!text.overview.title.trim()||!text.colophon.title.trim())errors.push("목차·전체 개요·발간정보 제목은 필수입니다.");
+  for(const part of Object.values(text.parts))if(!part.title.trim())errors.push("목차 대분류 제목은 필수입니다.");
   for(const [key,s] of Object.entries(text.sections)){
     if(!s.title.trim())errors.push(key+" 검사명은 필수입니다.");
     if(s.checks.length>6||s.procedure.length>8)errors.push(s.title+" 확인사항은 6개, 절차는 8단계까지 입력하세요.");
