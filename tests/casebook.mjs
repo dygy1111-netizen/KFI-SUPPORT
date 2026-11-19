@@ -7,7 +7,7 @@ const server = await createServer({server:{middlewareMode:true},appType:'custom'
 const db = new PGlite();
 try {
   const {parseImport,photoWidthPercent,photoHorizontalStretch,casebookPhotoPaths} = await server.ssrLoadModule('/src/lib/casebook.ts');
-  const {planCasebook,bookSectionKey} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
+  const {planCasebook,bookSectionKey,BOOK_PARTS,TOC_SECTIONS_PER_PAGE} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
   assert.equal(bookSectionKey("탱크 완공검사"),"completion");
   assert.equal(bookSectionKey("위치표시밸브"),"indicator");
   const bookRows = [
@@ -23,6 +23,13 @@ try {
   assert.equal(book.parts[0].sections[0].page,3);
   assert.equal(book.finalPage,12);
   assert.equal(book.unknown.length,1);
+  const allSections=BOOK_PARTS.flatMap(p=>p.sections).map((s,i)=>({id:i+1,case_no:i+1,sort_order:0,inspection_type:s.title}));
+  const fullBook=planCasebook(allSections);
+  assert.equal(TOC_SECTIONS_PER_PAGE,12);
+  assert.equal(fullBook.tocPages,2);
+  assert.equal(fullBook.overviewPage,3);
+  assert.equal(fullBook.parts[0].sections[0].page,4);
+  assert.equal(fullBook.finalPage,30);
   assert.equal(book.parts.flatMap(p=>p.sections).reduce((n,s)=>n+s.cases.length,0),bookRows.length);
 
   assert.equal(photoWidthPercent(undefined),100);
