@@ -24,11 +24,11 @@ function Intro({part,section}: {part:PlannedPart;section:PlannedSection}) {
     <h1 className="kb-title">{section.title}</h1>
     <p className="kb-lead">{part.subtitle}</p>
     <div className="kb-rule"/>
-    <h2>검사 개요</h2><p className="kb-copy">{section.summary}</p>
-    <div className="kb-legal"><b>관련 근거</b><span>{section.basis}</span></div>
+    <h2>검사 개요</h2><p className="kb-copy kb-edit-lines">{section.summary}</p>
+    <div className="kb-legal"><b>관련 근거</b><span className="kb-edit-lines">{section.basis}</span></div>
     <div className={section.procedure.length>0?"kb-intro-columns":"kb-intro-columns kb-intro-single"}>
       <section><h2>주요 확인사항</h2>
-        <div className="kb-checks">{section.checks.map((check,i)=><div key={check}><b>{String(i+1).padStart(2,"0")}</b><span>{check}</span></div>)}</div>
+        <div className="kb-checks">{section.checks.map((check,i)=><div key={i}><b>{String(i+1).padStart(2,"0")}</b><span>{check}</span></div>)}</div>
       </section>
       {section.procedure.length>0 && <section><h2>업무 처리 흐름</h2><Flow steps={section.procedure}/></section>}
     </div>
@@ -42,6 +42,7 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
   const plan=planCasebook(items);
   const {cover,toc,overview,colophon}=text;
   const title=bookTitle(text);
+  const partText=(part:PlannedPart)=>({...part,...text.parts[part.number]});
   const sectionText=(section:PlannedSection)=>({...section,...text.sections[section.key]});
   const entries=plan.parts.flatMap(p=>p.sections.map((s,i)=>({part:p,section:s,first:i===0})));
   return <>
@@ -62,7 +63,7 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
       <div className="kb-toc-note">{items.length}건의 사례 · {toc.description}</div>
       {i===0&&<div className="kb-toc-overview"><b>{overview.title.replace(/\n/g," ")}</b><span>{plan.overviewPage}</span></div>}
       <div className="kb-toc-list">{entries.slice(i*TOC_SECTIONS_PER_PAGE,(i+1)*TOC_SECTIONS_PER_PAGE).map(({part,section,first},j)=><div key={section.key}>
-        {(first||j===0)&&<div className="kb-toc-part"><b>{part.number}</b><span>{part.title}</span></div>}
+        {(first||j===0)&&<div className="kb-toc-part"><b>{part.number}</b><span>{partText(part).title}</span></div>}
         <div className="kb-toc-row"><span>{sectionText(section).title}</span><small>{section.cases.length}건</small><i/><b>{section.page}</b></div>
       </div>)}</div>
       {i===plan.tocPages-1&&<div className="kb-toc-overview"><b>{colophon.title}</b><span>{plan.finalPage}</span></div>}
@@ -81,7 +82,7 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
       <p className="kb-source kb-edit-lines">{overview.source}</p>
     </Sheet>
     {plan.parts.flatMap(part=>part.sections.flatMap(section=>[
-      <Intro key={"intro-"+section.key} part={part} section={sectionText(section)}/>,
+      <Intro key={"intro-"+section.key} part={partText(part)} section={sectionText(section)}/>,
       ...(frontMatterOnly?[]:section.cases.map((item,i)=><Fragment key={"case-"+item.id}>{renderCase(item,section.page+i+1)}</Fragment>))
     ]))}
     <Sheet page={plan.finalPage} label={colophon.title} className="kb-colophon">
