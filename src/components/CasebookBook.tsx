@@ -30,9 +30,7 @@ function Intro({part,section}: {part:PlannedPart;section:PlannedSection}) {
       </section>
       {section.procedure.length>0 && <section><h2>업무 처리 흐름</h2><Flow steps={section.procedure}/></section>}
     </div>
-    {section.procedure.length>0 && <p className="kb-note">절차는 업무 이해를 위한 요약이며, 세부 신청서류 및 시험항목은 해당 검사 안내 및 적용 기준 참고</p>}
     <div className="kb-section-count"><span>수록 사례</span><b>{section.cases.length}<small>건</small></b></div>
-    <p className="kb-source">참고: 한국소방산업기술원 위험물정보시스템<br/>{section.source}</p>
   </Sheet>;
 }
 
@@ -77,7 +75,6 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
       <h2>사례집 활용</h2>
       <div className="kb-usage">{overview.usage.map((line,i)=><p key={i}>{line}</p>)}</div>
       <p className="kb-note kb-edit-lines">{overview.note}</p>
-      <p className="kb-source kb-edit-lines">{overview.source}</p>
     </Sheet>
     {plan.parts.flatMap(part=>part.sections.flatMap(section=>[
       <Intro key={"intro-"+section.key} part={partText(part)} section={sectionText(section)}/>,
