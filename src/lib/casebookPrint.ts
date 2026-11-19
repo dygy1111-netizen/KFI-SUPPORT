@@ -31,6 +31,9 @@ function ensurePrintStyle() {
     /* A4 크기와 페이지 나눔은 기존 CasebookManager.css 설정을 유지 */
     .cb-print-only .cb-a4-page {
       position: relative;
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
 
     /*
@@ -39,11 +42,13 @@ function ensurePrintStyle() {
      */
     .cb-print-only .cb-print-body {
       position: absolute;
-      top: 12mm;
-      left: 12mm;
+      /* CSS zoom changes layout dimensions as well as visible size.
+         A transform alone makes Chromium paginate the unscaled height. */
+      top: calc(12mm / var(--print-scale, 1));
+      left: calc(12mm / var(--print-scale, 1));
       width: var(--print-body-width, 186mm);
-      transform: scale(var(--print-scale, 1));
-      transform-origin: top left;
+      zoom: var(--print-scale, 1);
+      transform: none;
     }
 
     /*
