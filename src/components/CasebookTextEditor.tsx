@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BOOK_PARTS } from "../lib/casebookBook";
 import { DEFAULT_BOOK_TEXT, parseBookText, validateBookText, type BookText } from "../lib/casebookBookText";
 import { loadBookText, saveBookText } from "../lib/casebookBookTextStore";
 import type { CasebookCase } from "../lib/casebook";
-import { CasebookBook } from "./CasebookBook";
+import { CasebookBook, validateBookLayout } from "./CasebookBook";
 
 function Field({label,value,change,lines=1}:{label:string;value:string;change:(s:string)=>void;lines?:number}){
   return <label className="kb-edit-field"><span>{label}</span>{lines===1?<input value={value} onChange={e=>change(e.target.value)}/>:<textarea rows={lines} value={value} onChange={e=>change(e.target.value)}/>}</label>;
@@ -19,11 +19,13 @@ export function CasebookTextEditor({items,onClose}:{items:CasebookCase[];onClose
   const [message,setMessage]=useState("");
   const [failed,setFailed]=useState(false);
   const sections=BOOK_PARTS.flatMap(p=>p.sections);
+  const previewRoot=useRef<HTMLDivElement>(null);
+  const printable=items.filter(x=>x.published&&x.review_status==="검토완료");
   const patch=(next:BookText)=>{setText(next);setDirty(true);setMessage("");};
   const reload=async()=>{setBusy(true);setFailed(false);try{const result=await loadBookText();setText(result.text);setRevision(result.revision);setDirty(false);setMessage("");}catch(e){setFailed(true);setMessage(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
   useEffect(()=>{void reload();},[]);
-  const close=()=>{if(!dirty||confirm("저장하지 않은 수정 내용을 닫으시겠습니까?"))onClose();};
-  const save=async()=>{setBusy(true);setFailed(false);try{const errors=validateBookText(text);if(errors.length)throw new Error(errors.join("\n"));setRevision(await saveBookText(text,revision));setDirty(false);setMessage("저장 완료. 다음 PDF 출력부터 반영됩니다.");}catch(e){setFailed(true);setMessage(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
+  const close=()=>{if(busy&&revision)return;if(!dirty||confirm("저장하지 않은 수정 내용을 닫으시겠습니까?"))onClose();};
+  const save=async()=>{setBusy(true);setFailed(false);try{const errors=validateBookText(text);if(errors.length)throw new Error(errors.join("\n"));await document.fonts.ready; if(previewRoot.current)validateBookLayout(previewRoot.current); setRevision(await saveBookText(text,revision));setDirty(false);setMessage("저장 완료. 다음 PDF 출력부터 반영됩니다.");}catch(e){setFailed(true);setMessage(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
   const lines=(value:string)=>value.split("\n");
   const se=text.sections[sectionKey];
   const sectionField=(key:keyof typeof se,value:string|string[])=>patch({...text,sections:{...text.sections,[sectionKey]:{...se,[key]:value}}});
@@ -40,6 +42,6 @@ export function CasebookTextEditor({items,onClose}:{items:CasebookCase[];onClose
       {tab==="section"&&<><label className="kb-edit-field"><span>검사 종류 선택</span><select value={sectionKey} onChange={e=>setSectionKey(e.target.value)}>{sections.map(s=><option key={s.key} value={s.key}>{s.title}</option>)}</select></label><Field label="표시 제목 (목차에도 반영)" value={se.title} change={v=>sectionField("title",v)}/><Field label="검사 개요" lines={4} value={se.summary} change={v=>sectionField("summary",v)}/><Field label="관련 근거" lines={2} value={se.basis} change={v=>sectionField("basis",v)}/><Field label="주요 확인사항 (한 줄에 하나)" lines={6} value={se.checks.join("\n")} change={v=>sectionField("checks",lines(v))}/><Field label="업무 처리절차 (한 줄에 한 단계)" lines={8} value={se.procedure.join("\n")} change={v=>sectionField("procedure",lines(v))}/><Field label="참고 출처" value={se.source} change={v=>sectionField("source",v)}/></>}
       {tab==="colophon"&&<><Field label="발간정보 제목" value={text.colophon.title} change={title=>patch({...text,colophon:{...text.colophon,title}})}/><Field label="홈페이지" value={text.colophon.website} change={website=>patch({...text,colophon:{...text.colophon,website}})}/><Field label="안내문" lines={5} value={text.colophon.note} change={note=>patch({...text,colophon:{...text.colophon,note}})}/><p>제작년도·기관·부서는 표지 설정과 연동됩니다.</p></>}
     </div>}
-    {preview&&<div className="kb-editor-preview"><p>현재 수정 문안 미리보기 · 검토완료·공개 사례 기준. 실제 사례 페이지는 생략합니다.</p><div className="kb-book-preview"><CasebookBook items={items.filter(x=>x.published&&x.review_status==="검토완료")} text={text} frontMatterOnly renderCase={()=>null}/></div></div>}
+    <div className={"kb-editor-preview"+(preview?"":" kb-editor-check")} aria-hidden={!preview}><p>현재 수정 문안 미리보기 · 검토완료·공개 사례 기준. 실제 사례 페이지는 생략합니다.</p><div className="kb-book-preview" ref={previewRoot}><CasebookBook items={printable} text={text} frontMatterOnly renderCase={()=>null}/></div></div>
   </div></div>;
 }
