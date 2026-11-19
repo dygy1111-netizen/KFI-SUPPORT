@@ -3,7 +3,7 @@
  * 관리자(선택/전체 PDF)와 공개 화면 PDF가 공통으로 사용합니다.
  *
  * A4 용지는 그대로 두고 제목/표/사진/쪽번호만 함께 축소합니다.
- * 사진 크기는 고정하고 다른 표 행을 세로로 늘려 하단 약 20%를 남깁니다.
+ * 사진 크기는 고정하고 다른 표 행을 세로로 늘려 하단 약 5%를 남깁니다.
  * 긴 사례는 가독성과 한 페이지 수록을 우선합니다.
  */
 
@@ -11,10 +11,10 @@
 // amount of text, and the scaling used to fit a page.
 export const PRINT_PHOTO_HEIGHT_MM = 60;
 const PRINT_PHOTO_GAP_MM = 2;
-export const TARGET_CONTENT_RATIO = 0.80;
+export const TARGET_CONTENT_RATIO = 0.95;
 const MIN_PRINT_PAD_MM = 2.1;
 const MIN_REVIEWED_PRINT_PAD_MM = 2.7;
-const EXTRA_BOTTOM_MM = 8;
+const MIN_BOTTOM_MM = 10;
 const PRINT_STYLE_ID = "kfi-casebook-scaled-print";
 
 type FitTarget = "quarter" | "page";
@@ -90,6 +90,11 @@ function ensurePrintStyle() {
     .cb-print-only .cb-a4-page .cb-table-row:not(:has(.cb-photo-area)) > .cb-table-label {
       padding-top: calc(var(--print-pad) + var(--print-extra-row-pad, 0mm));
       padding-bottom: calc(var(--print-pad) + var(--print-extra-row-pad, 0mm));
+    }
+    /* Slightly more open text leading, without affecting the photo row. */
+    .cb-print-only .cb-a4-page .cb-table-row:not(:has(.cb-photo-area)) > .cb-table-content,
+    .cb-print-only .cb-a4-page .cb-table-row:not(:has(.cb-photo-area)) > .cb-table-label {
+      line-height: 1.65;
     }
 
     /* Fixed cells: one photo fills the entire photo width; two share it
@@ -370,7 +375,7 @@ function fits(page: HTMLElement, target: FitTarget): boolean {
   const availableBottom =
     target === "quarter"
       ? paper.top + paper.height * TARGET_CONTENT_RATIO
-      : paper.bottom - ((10 + EXTRA_BOTTOM_MM) * 96) / 25.4;
+      : paper.bottom - (MIN_BOTTOM_MM * 96) / 25.4;
 
   const rightLimit = paper.right - (12 * 96) / 25.4;
 
@@ -444,7 +449,7 @@ export async function prepareCasebookPrint(
     let fitted = false;
     page.style.setProperty("--print-extra-row-pad", "0mm");
     // Keep the photo dimensions fixed. Prefer an unscaled readable page with
-    // a 20% bottom margin; for longer content, use the full printable area.
+    // a 5% bottom margin; exceptionally long content may use the last 4.85mm.
     for (const target of ["quarter", "page"] as const) {
       for (const scale of scales) {
         applyScale(page, scale, initialPad);
