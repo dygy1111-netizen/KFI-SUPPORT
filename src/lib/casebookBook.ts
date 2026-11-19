@@ -87,14 +87,13 @@ const PRODUCT_TOPICS = [
 const TANK_TITLE_OVERRIDES = [
   topic("피뢰설비 및 접지시설", /접지저항|피뢰설비|탱크접지/),
   topic("소화설비", /^폼(?:미형성|형성불량)$|^(?:포|고정포)?소화설비|^물분무설비|^보조포소화전/),
-  topic("지붕", /(?:외부|내부)?부상지붕.*(?:실링|실미설치|실파손)/),
-  topic("계단·사다리", /^계단.*(?:파손|부식)|^사다리.*(?:파손|부식)/),
+  topic("지붕", /(?:외부|내부)?부상지붕.*(?:실링|실미설치|실파손|씰|seal)/i),
 ];
 const OTHER_SUBTOPICS: TopicRule[] = [];
 const SUBTOPICS: Record<string, TopicRule[]> = {
   "지붕": [
     topic("지붕판", /지붕판|두께|천공|관통결함|지붕부적합/),
-    topic("부상지붕·실링", /부상지붕|림부분|실링|실미설치|실파손/),
+    topic("부상지붕·실링", /부상지붕|림부분|실링|실미설치|실파손|씰|seal/i),
     topic("통기관·안전장치", /통기관|인화방지망|화염방지|대기밸브|비상압력배출/),
   ],
   "옆판": [
@@ -149,16 +148,31 @@ function topicOrder(item: CasebookCase) {
   const tank=["safety","precision","interim","completion"].includes(sectionKey);
   const rules=tank ? TANK_TOPICS : PRODUCT_TOPICS;
   const title=cleanTopic(item.title);
-  const testItem=cleanTopic(item.test_item) || cleanTopic(item.facility?.split("·")[1]);
+  const testItem=cleanTopic(item.test_item);
+  const facilityTopic=cleanTopic(item.facility?.split("·").slice(1).join("·"));
+  const registeredTopic=testItem||facilityTopic;
   // Match specific items before broad "설비" or "배관" patterns.
-  const exact=rules.findIndex(rule=>cleanTopic(rule.label)===testItem);
-  let idx=exact>=0?exact:topicIndex(rules,testItem);
+  const exact=rules.findIndex(rule=>cleanTopic(rule.label)===registeredTopic);
+  // Prefer a specific registered area/test over an incidental word in the title.
+  const preciseRules=rules.filter(rule=>rule.label!=="위치·구조 및 설비");
+  const specific=preciseRules.find(rule=>rule.match.test(registeredTopic));
+  let idx=exact>=0?exact:specific?rules.indexOf(specific):-1;
+  if(idx<0 && facilityTopic){
+    const fromFacility=preciseRules.find(rule=>rule.match.test(facilityTopic));
+    if(fromFacility)idx=rules.indexOf(fromFacility);
+  }
   if(tank){
     const explicit=TANK_TITLE_OVERRIDES.find(rule=>rule.match.test(title));
-    if(explicit)idx=rules.findIndex(rule=>rule.label===explicit.label);
+    // Only override an unresolved or demonstrably inconsistent legacy grouping.
+    if(explicit && (idx<0 || rules[idx].label==="위치·구조 및 설비" ||
+      (explicit.label==="지붕" && rules[idx].label==="비파괴시험") ||
+      (explicit.label==="피뢰설비 및 접지시설" && ["지붕","옆판","기초","부속설비"].includes(rules[idx].label)))){
+      idx=rules.findIndex(rule=>rule.label===explicit.label);
+    }
   }
   if(idx<0)idx=topicIndex(rules,title);
-  const label=idx<0?(testItem||"기타"):rules[idx].label;
+  if(idx<0)idx=topicIndex(rules,registeredTopic);
+  const label=idx<0?(registeredTopic||"기타"):rules[idx].label;
   const subRules=SUBTOPICS[label]??OTHER_SUBTOPICS;
   const subIndex=topicIndex(subRules,title);
   return {
@@ -178,6 +192,21 @@ export function bookCompare(a: CasebookCase, b: CasebookCase): number {
   return x.rank-y.rank || x.label.localeCompare(y.label,"ko") ||
     x.subRank-y.subRank ||
     a.case_no-b.case_no || a.sort_order-b.sort_order || a.id-b.id;
+}
+
+// The same comparator is used after every load, edit and filter. Group headings
+// expose the actual display classification without rewriting stored legal fields.
+export function groupCasebookCases(items: CasebookCase[]) {
+  const groups: {key:string; inspection:string; topic:string; items:CasebookCase[]}[]=[];
+  for(const item of [...items].sort(bookCompare)){
+    const sectionKey=bookSectionKey(item.inspection_type);
+    const topic=topicOrder(item).label;
+    const key=sectionKey+"::"+topic;
+    const last=groups[groups.length-1];
+    if(last?.key===key)last.items.push(item);
+    else groups.push({key,inspection:BOOK_PARTS.flatMap(p=>p.sections).find(s=>s.key===sectionKey)?.title??item.inspection_type,topic,items:[item]});
+  }
+  return groups;
 }
 
 // Keep expanded table-of-contents type readable even when all 13 categories are present.
