@@ -99,6 +99,7 @@ export function PublicCasebookView({
     let frame = 0;
     let cancelled = false;
     const update = () => {
+      if (cancelled) return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (cancelled || !page.isConnected) return;
@@ -694,11 +695,6 @@ export function PublicCasebookView({
                     className="case-card"
                     onClick={() => {
                       setSelected(item);
-
-                      window.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                      });
                     }}
                   >
                     <div className="case-copy">
