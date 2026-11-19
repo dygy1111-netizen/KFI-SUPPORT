@@ -23,7 +23,7 @@ import { loadCasebook } from '../lib/casebookQuery';
 import { sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { CasebookManager, CasebookPage } from "./CasebookManager";
 import { CasebookBook } from "./CasebookBook";
-import { bookCompare, planCasebook } from "../lib/casebookBook";
+import { bookCompare, groupCasebookCases, planCasebook } from "../lib/casebookBook";
 
 type ZoomLevel =
   | "small"
@@ -240,7 +240,7 @@ export function PublicCasebookView({
           queryMatch &&
           (!isAdmin || reviewFilter === "전체" || item.review_status === reviewFilter)
         );
-      }),
+      }).sort(bookCompare),
     [
       items,
       category,
@@ -607,8 +607,11 @@ export function PublicCasebookView({
           !error &&
           filtered.length > 0 && (
           <div className="case-grid case-grid-text-only">
-            {filtered.map(
-              (item) => (
+            {groupCasebookCases(filtered).flatMap(group => [
+              <div key={"group-"+group.key} className="cb-case-topic-head">
+                <span>{group.inspection}</span><b>{group.topic}</b><small>{group.items.length}건</small>
+              </div>,
+              ...group.items.map(item => (
                 <article
                   key={item.id}
                   className={`case-card-shell ${
@@ -664,8 +667,8 @@ export function PublicCasebookView({
                     </button>
                   )}
                 </article>
-              ),
-            )}
+              ))
+            ])}
           </div>
         )}
 

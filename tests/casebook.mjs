@@ -7,7 +7,7 @@ const server = await createServer({server:{middlewareMode:true},appType:'custom'
 const db = new PGlite();
 try {
   const {parseImport,photoWidthPercent,photoHorizontalStretch,casebookPhotoPaths} = await server.ssrLoadModule('/src/lib/casebook.ts');
-  const {planCasebook,bookSectionKey,bookCompare,BOOK_PARTS,TOC_SECTIONS_PER_PAGE} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
+  const {planCasebook,bookSectionKey,bookCompare,groupCasebookCases,BOOK_PARTS,TOC_SECTIONS_PER_PAGE} = await server.ssrLoadModule('/src/lib/casebookBook.ts');
   assert.equal(bookSectionKey("탱크 완공검사"),"completion");
   assert.equal(bookSectionKey("위치표시밸브"),"indicator");
   const bookRows = [
@@ -48,6 +48,23 @@ try {
   assert.deepEqual([...groupedRows].sort(bookCompare).map(x=>x.id),expected);
   assert.deepEqual(planCasebook(groupedRows).parts.flatMap(p=>p.sections.flatMap(s=>s.cases.map(c=>c.id))),expected);
   assert.deepEqual(groupedRows.map(x=>x.case_no),Array.from({length:16},(_,i)=>i+1));
+  // A current administrator correction must change the order on the next load,
+  // even if the previous title or facility still mentions another area.
+  const changed=[
+    mk(21,"정밀정기검사","비파괴시험","외부부상지붕 씰 미설치"),
+    mk(15,"정밀정기검사","옆판","계단 부식에 의한 파손"),
+    mk(14,"정밀정기검사","지붕","통기관의 상태 : 화염방지장치 미설치"),
+    mk(17,"정밀정기검사","소화설비","폼 미형성"),
+    {...mk(24,"정밀정기검사","","외부부상지붕 실 파손"),facility:"정밀정기검사 · 지붕"},
+    mk(30,"정밀정기검사","밑판","밑판 차기점검 판정두께 미달"),
+  ];
+  const groups=groupCasebookCases(changed);
+  assert.deepEqual(groups.map(g=>g.topic),["지붕","옆판","밑판","소화설비"]);
+  assert.deepEqual(groups.flatMap(g=>g.items.map(x=>x.id)),[21,24,14,15,30,17]);
+  assert.deepEqual(planCasebook(changed).parts.flatMap(p=>p.sections.flatMap(s=>s.cases.map(c=>c.id))),[21,24,14,15,30,17]);
+  const edited=changed.map(x=>x.id===15?{...x,test_item:"계단"}:x);
+  assert.deepEqual(groupCasebookCases(edited).map(g=>g.topic),["지붕","밑판","계단·사다리","소화설비"]);
+
 
   const allSections=BOOK_PARTS.flatMap(p=>p.sections).map((s,i)=>({id:i+1,case_no:i+1,sort_order:0,inspection_type:s.title}));
   const fullBook=planCasebook(allSections);

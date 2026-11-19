@@ -596,12 +596,7 @@ export function CasebookManager({
       const loaded = await load();
       setFiles(EMPTY_FILES);
       if (loaded) {
-        const ordered = [...loaded].sort(
-          (a, b) =>
-            a.case_no - b.case_no ||
-            a.sort_order - b.sort_order ||
-            a.id - b.id,
-        );
+        const ordered = [...loaded].sort(bookCompare);
 
         if (savedId) {
           const savedIndex = ordered.findIndex((item) => item.id === savedId);
