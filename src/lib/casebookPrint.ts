@@ -3,16 +3,15 @@
  * 관리자(선택/전체 PDF)와 공개 화면 PDF가 공통으로 사용합니다.
  *
  * A4 용지는 그대로 두고 제목/표/사진/쪽번호만 함께 축소합니다.
- * 내용이 짧으면 하단 약 25%를 비우고, 긴 사례는 가독성과 한 페이지 수록을 우선합니다.
+ * 사진 크기는 고정하고 다른 표 행을 세로로 늘려 하단 약 20%를 남깁니다.
+ * 긴 사례는 가독성과 한 페이지 수록을 우선합니다.
  */
 
 // Fixed physical size on A4, independent of editor widths, image ratio,
 // amount of text, and the scaling used to fit a page.
 export const PRINT_PHOTO_HEIGHT_MM = 60;
 const PRINT_PHOTO_GAP_MM = 2;
-const TARGET_CONTENT_RATIO = 0.75;
-// '품질사례 > 검토완료 사례 PDF'는 하단 약 13.5%를 남기는 것을 우선합니다.
-const REVIEWED_TARGET_CONTENT_RATIO = 0.865;
+export const TARGET_CONTENT_RATIO = 0.80;
 const MIN_PRINT_PAD_MM = 2.1;
 const MIN_REVIEWED_PRINT_PAD_MM = 2.7;
 const EXTRA_BOTTOM_MM = 8;
@@ -83,6 +82,14 @@ function ensurePrintStyle() {
       min-width: 0;
       justify-content: flex-start;
       padding: var(--print-photo-pad, 1mm) !important;
+    }
+
+    /* Stretch only non-photo table rows. The photo cell and its label are
+       unchanged, so the fixed 60mm photo and surrounding row stay intact. */
+    .cb-print-only .cb-a4-page .cb-table-row:not(:has(.cb-photo-area)) > .cb-table-content,
+    .cb-print-only .cb-a4-page .cb-table-row:not(:has(.cb-photo-area)) > .cb-table-label {
+      padding-top: calc(var(--print-pad) + var(--print-extra-row-pad, 0mm));
+      padding-bottom: calc(var(--print-pad) + var(--print-extra-row-pad, 0mm));
     }
 
     /* Fixed cells: one photo fills the entire photo width; two share it
@@ -360,16 +367,9 @@ function fits(page: HTMLElement, target: FitTarget): boolean {
   const content = body.getBoundingClientRect();
   const footerRect = footer.getBoundingClientRect();
 
-  const reviewed = page.closest(
-    '.cb-print-only[data-print-mode="reviewed"]',
-  ) !== null;
-  const preferredRatio = reviewed
-    ? REVIEWED_TARGET_CONTENT_RATIO
-    : TARGET_CONTENT_RATIO;
-
   const availableBottom =
     target === "quarter"
-      ? paper.top + paper.height * preferredRatio
+      ? paper.top + paper.height * TARGET_CONTENT_RATIO
       : paper.bottom - ((10 + EXTRA_BOTTOM_MM) * 96) / 25.4;
 
   const rightLimit = paper.right - (12 * 96) / 25.4;
@@ -379,6 +379,36 @@ function fits(page: HTMLElement, target: FitTarget): boolean {
     content.right <= rightLimit + 1 &&
     content.left >= paper.left - 1
   );
+}
+
+/** Fill the remaining vertical budget with even padding in non-photo rows.
+ * Measure the actual footer after each adjustment rather than guessing line
+ * heights. Compensate for page scale so the physical padding is consistent.
+ */
+function expandNonPhotoRows(page: HTMLElement, scale: number): void {
+  const rows = page.querySelectorAll(".cb-table-row:not(:has(.cb-photo-area))");
+  if (!rows.length || !fits(page, "quarter")) return;
+  const paper = page.getBoundingClientRect();
+  const footer = page.querySelector<HTMLElement>(".cb-page-footer");
+  if (!footer) return;
+  const remainingPx = paper.top + paper.height * TARGET_CONTENT_RATIO -
+    footer.getBoundingClientRect().bottom;
+  if (remainingPx <= 0.5) return;
+
+  const setPad = (mm: number) => page.style.setProperty(
+    "--print-extra-row-pad", (mm / scale).toFixed(4) + "mm",
+  );
+  let low = 0;
+  // The extra padding acts on top and bottom; the conservative upper bound
+  // also allows for a row in which its original label was taller than its text.
+  let high = remainingPx * 25.4 / 96 + 2;
+  for (let i = 0; i < 16; i++) {
+    const candidate = (low + high) / 2;
+    setPad(candidate);
+    if (fits(page, "quarter")) low = candidate;
+    else high = candidate;
+  }
+  setPad(Math.max(0, low - 0.025));
 }
 
 export async function prepareCasebookPrint(
@@ -412,13 +442,14 @@ export async function prepareCasebookPrint(
     const initialPad = reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM;
 
     let fitted = false;
-    // Keep photographs fixed at 60mm; fit the text and other rows instead.
-    // Prefer the existing whitespace target, then use the full printable area.
-    // Fail clearly instead of silently shrinking a photo or losing text.
+    page.style.setProperty("--print-extra-row-pad", "0mm");
+    // Keep the photo dimensions fixed. Prefer an unscaled readable page with
+    // a 20% bottom margin; for longer content, use the full printable area.
     for (const target of ["quarter", "page"] as const) {
       for (const scale of scales) {
         applyScale(page, scale, initialPad);
         if (!fits(page, target)) continue;
+        if (target === "quarter") expandNonPhotoRows(page, scale);
         fitted = true;
         break;
       }
