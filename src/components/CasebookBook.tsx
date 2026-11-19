@@ -18,11 +18,9 @@ function Flow({steps}: {steps:string[]}) {
   return <div className="kb-flow">{steps.map((step,i)=><div className="kb-flow-step" key={i}><b>{String(i+1).padStart(2,"0")}</b><span>{step}</span></div>)}</div>;
 }
 function Intro({part,section}: {part:PlannedPart;section:PlannedSection}) {
-  const index=part.sections.findIndex(s=>s.key===section.key)+1;
   return <Sheet page={section.page} label={part.title}>
-    <div className="kb-intro-top"><div className="kb-eyebrow">{part.title}</div><div className="kb-section-no">{part.number}.{String(index).padStart(2,"0")}</div></div>
+    <div className="kb-intro-top"><div className="kb-eyebrow">{part.title}</div></div>
     <h1 className="kb-title">{section.title}</h1>
-    <p className="kb-lead">{part.subtitle}</p>
     <div className="kb-rule"/>
     <h2>검사 개요</h2><p className="kb-copy kb-edit-lines">{section.summary}</p>
     <div className="kb-legal"><b>관련 근거</b><span className="kb-edit-lines">{section.basis}</span></div>
@@ -60,7 +58,7 @@ export function CasebookBook({items,renderCase,text=DEFAULT_BOOK_TEXT,frontMatte
     </article>
     {Array.from({length:plan.tocPages},(_,i)=><Sheet key={"toc-"+i} page={i+1} label={toc.title} className="kb-toc">
       <div className="kb-eyebrow">{title}</div><h1 className="kb-title">{toc.title}</h1>
-      <div className="kb-toc-note">{items.length}건의 사례 · {toc.description}</div>
+      <div className="kb-toc-note">{toc.description}</div>
       {i===0&&<div className="kb-toc-overview"><b>{overview.title.replace(/\n/g," ")}</b><span>{plan.overviewPage}</span></div>}
       <div className="kb-toc-list">{entries.slice(i*TOC_SECTIONS_PER_PAGE,(i+1)*TOC_SECTIONS_PER_PAGE).map(({part,section,first},j)=><div key={section.key}>
         {(first||j===0)&&<div className="kb-toc-part"><b>{part.number}</b><span>{partText(part).title}</span></div>}
