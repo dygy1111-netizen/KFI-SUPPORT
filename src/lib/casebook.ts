@@ -140,6 +140,8 @@ export function sourceCaseNumber(
  */
 const PRODUCT_INSPECTION_TYPES = new Set([
   "교반기",
+  "통기관대기밸브",
+  "비상압력배출장치",
   "누설감지설비",
   "운반용기",
   "위치표시형밸브",

@@ -23,6 +23,8 @@ import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 import { CasebookTextUpdate } from "./CasebookTextUpdate";
 import { CasebookLegalUpdate } from "./CasebookLegalUpdate";
+import { CasebookBook } from "./CasebookBook";
+import { bookCompare } from "../lib/casebookBook";
 
 type Draft = Omit<
   CasebookCase,
@@ -292,6 +294,7 @@ export function CasebookManager({
   onDeleted,
 }: CasebookManagerProps = {}) {
   const [items, setItems] = useState<CasebookCase[]>([]);
+  const [reviewFilter,setReviewFilter] = useState("전체");
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [files, setFiles] = useState<PhotoFiles>(EMPTY_FILES);
 
@@ -329,14 +332,11 @@ export function CasebookManager({
 
   const orderedItems = useMemo(
     () =>
-      [...items].sort(
-        (a, b) =>
-          a.case_no - b.case_no ||
-          a.sort_order - b.sort_order ||
-          a.id - b.id,
-      ),
+      [...items].sort(bookCompare),
     [items],
   );
+
+  const shownItems = orderedItems.filter(item=>reviewFilter==="전체"||item.review_status===reviewFilter);
 
   const currentIndex = draft.id
     ? orderedItems.findIndex((item) => item.id === draft.id)
@@ -717,11 +717,9 @@ export function CasebookManager({
   };
 
   const selectAll = () => {
-    setSelectedIds(
-      selectedIds.length === items.length
-        ? []
-        : items.map((item) => item.id),
-    );
+    const ids=shownItems.map(item=>item.id);
+    setSelectedIds(current=>ids.length>0&&ids.every(id=>current.includes(id))
+      ? current.filter(id=>!ids.includes(id)) : [...new Set([...current,...ids])]);
   };
 
   const printCases = (mode: "selected" | "all") => {
@@ -737,12 +735,12 @@ export function CasebookManager({
 
     originalTitle.current = document.title;
     document.title = `위험물시설_품질관리_사례_${mode === "all" ? "전체" : "선택"}`;
-    setPrintItems([...targets].sort((a,b)=>a.case_no-b.case_no));
+    setPrintItems([...targets].sort(bookCompare));
 
     // Wait for React commit, fonts and pictures before measuring the A4 layout.
     window.setTimeout(async () => {
       await document.fonts.ready;
-      const pages = Array.from(document.querySelectorAll<HTMLElement>('.cb-print-only .cb-a4-page'));
+      const pages = Array.from(document.querySelectorAll<HTMLElement>('.cb-print-only .cb-a4-page:not(.kb-sheet):not(.kb-cover)'));
       try {
         await prepareCasebookPrint(pages);
         window.print();
@@ -1318,7 +1316,7 @@ export function CasebookManager({
           <div className="cb-list-head">
             <div>
               <h3>등록된 사례</h3>
-              <span>{items.length}건</span>
+              <span>{shownItems.length}건 / 전체 {items.length}건</span>
             </div>
 
             <div className="cb-list-actions">
@@ -1327,7 +1325,7 @@ export function CasebookManager({
                 className="secondary-button"
                 onClick={selectAll}
               >
-                {selectedIds.length === items.length && items.length
+                {shownItems.length>0 && shownItems.every(item=>selectedIds.includes(item.id))
                   ? "전체 선택 해제"
                   : "전체 선택"}
               </button>
@@ -1350,13 +1348,18 @@ export function CasebookManager({
             </div>
           </div>
 
+          <div className="cb-review-filter" aria-label="검토상태 필터">
+            {["전체","검토완료","검토대기","기준확인필요"].map(status=>
+              <button type="button" key={status} aria-pressed={status===reviewFilter}
+                onClick={()=>setReviewFilter(status)}>{status} ({status==="전체"?items.length:items.filter(item=>item.review_status===status).length})</button>)}
+          </div>
           {loading ? (
             <div className="empty-list">
               사례집 목록을 불러오는 중입니다.
             </div>
-          ) : items.length ? (
+          ) : shownItems.length ? (
             <div className="cb-rows">
-              {items.map((item) => (
+              {shownItems.map((item) => (
                 <article
                   key={item.id}
                   className={
@@ -1410,13 +1413,8 @@ export function CasebookManager({
 
       {showList && printItems.length > 0 && createPortal(
         <div className="cb-print-only">
-          {printItems.map((item, index) => (
-            <CasebookPage
-              key={`print-${item.id}`}
-              pageNumber={index+1}
-              item={item}
-            />
-          ))}
+          <CasebookBook items={printItems}
+            renderCase={(item,page)=><CasebookPage item={item} pageNumber={page}/>}/>
         </div>, document.body
       )}
     </>

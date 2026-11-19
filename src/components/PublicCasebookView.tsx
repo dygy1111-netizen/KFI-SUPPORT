@@ -22,6 +22,8 @@ import "./CasebookManager.css";
 import { loadCasebook } from '../lib/casebookQuery';
 import { sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { CasebookManager, CasebookPage } from "./CasebookManager";
+import { CasebookBook } from "./CasebookBook";
+import { bookCompare, planCasebook } from "../lib/casebookBook";
 
 type ZoomLevel =
   | "small"
@@ -73,6 +75,7 @@ export function PublicCasebookView({
   const [retry, setRetry] = useState(0);
   const [authReady, setAuthReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [reviewFilter,setReviewFilter] = useState("전체");
   const [editing, setEditing] = useState<CasebookCase | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
   const originalTitle = useRef<string | null>(null);
@@ -145,7 +148,7 @@ export function PublicCasebookView({
         return;
       }
 
-      const nextItems = (data || []) as CasebookCase[];
+      const nextItems = ((data || []) as CasebookCase[]).slice().sort(bookCompare);
       setItems(nextItems);
       setSelected((current) =>
         current
@@ -234,7 +237,8 @@ export function PublicCasebookView({
 
         return (
           categoryMatch &&
-          queryMatch
+          queryMatch &&
+          (!isAdmin || reviewFilter === "전체" || item.review_status === reviewFilter)
         );
       }),
     [
@@ -242,6 +246,7 @@ export function PublicCasebookView({
       category,
       normalizedQuery,
       isAdmin,
+      reviewFilter,
     ],
   );
 
@@ -250,12 +255,7 @@ export function PublicCasebookView({
       .filter(
         (item) => item.review_status === "검토완료" && item.published,
       )
-      .sort(
-        (a, b) =>
-          a.case_no - b.case_no ||
-          a.sort_order - b.sort_order ||
-          a.id - b.id,
-      );
+      .sort(bookCompare);
 
     if (!targets.length) {
       setError("PDF로 출력할 검토완료 사례가 없습니다.");
@@ -274,12 +274,16 @@ export function PublicCasebookView({
         '.cb-print-only[data-print-mode="reviewed"]',
       );
       const pages = Array.from(
-        printRoot?.querySelectorAll<HTMLElement>(".cb-a4-page") ?? [],
+        printRoot?.querySelectorAll<HTMLElement>(".cb-a4-page:not(.kb-sheet):not(.kb-cover)") ?? [],
       );
 
       try {
         if (pages.length !== targets.length) {
           throw new Error("검토완료 사례 PDF 페이지를 준비하지 못했습니다.");
+        }
+        const plan = planCasebook(targets);
+        if (printRoot?.querySelectorAll(".cb-a4-page").length !== plan.finalPage + 1) {
+          throw new Error("사례집 목차와 실제 인쇄 페이지가 일치하지 않습니다.");
         }
         await prepareCasebookPrint(pages);
       } catch (error) {
@@ -341,13 +345,8 @@ export function PublicCasebookView({
       {printItems.length > 0 &&
         createPortal(
           <div className="cb-print-only" data-print-mode="reviewed">
-            {printItems.map((item, index) => (
-              <CasebookPage
-                key={`public-print-${item.id}`}
-                item={item}
-                pageNumber={index + 1}
-              />
-            ))}
+            <CasebookBook items={printItems}
+              renderCase={(item,page)=><CasebookPage item={item} pageNumber={page}/>}/>
           </div>,
           document.body,
         )}
@@ -567,6 +566,13 @@ export function PublicCasebookView({
         </div>
 
 
+        {isAdmin && <div className="cb-review-filter" aria-label="검토상태 필터">
+          {["전체","검토완료","검토대기","기준확인필요"].map(status =>
+            <button type="button" key={status} aria-pressed={reviewFilter===status}
+              onClick={()=>setReviewFilter(status)}>
+              {status} ({status==="전체" ? items.length : items.filter(x=>x.review_status===status).length})
+            </button>)}
+        </div>}
         <div className="case-count">
           <b>
             {filtered.length}
