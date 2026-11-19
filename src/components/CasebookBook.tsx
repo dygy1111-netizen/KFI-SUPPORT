@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import type { CasebookCase } from "../lib/casebook";
-import { planCasebook, type PlannedPart, type PlannedSection } from "../lib/casebookBook";
+import { planCasebook, TOC_SECTIONS_PER_PAGE, type PlannedPart, type PlannedSection } from "../lib/casebookBook";
 import "./CasebookBook.css";
 
 type Props = {items: CasebookCase[]; renderCase: (item: CasebookCase, page: number) => ReactNode};
@@ -57,7 +57,7 @@ export function CasebookBook({items,renderCase}:Props) {
       <div className="kb-eyebrow">2026년 위험물시설 품질관리 사례집</div><h1 className="kb-title">목차</h1>
       <div className="kb-toc-note">{items.length}건의 사례 · 검사별 개요 및 업무 처리 흐름</div>
       {i===0&&<div className="kb-toc-overview"><b>위험물안전관리 및 검사업무 개요</b><span>{plan.overviewPage}</span></div>}
-      <div className="kb-toc-list">{entries.slice(i*15,(i+1)*15).map(({part,section,first},j)=><div key={section.key}>
+      <div className="kb-toc-list">{entries.slice(i*TOC_SECTIONS_PER_PAGE,(i+1)*TOC_SECTIONS_PER_PAGE).map(({part,section,first},j)=><div key={section.key}>
         {(first||j===0)&&<div className="kb-toc-part"><b>{part.number}</b><span>{part.title}</span></div>}
         <div className="kb-toc-row"><span>{section.title}</span><small>{section.cases.length}건</small><i/><b>{section.page}</b></div>
       </div>)}</div>
