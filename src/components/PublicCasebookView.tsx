@@ -23,7 +23,10 @@ import "./CasebookManager.css";
 import { loadCasebook } from '../lib/casebookQuery';
 import { sourceCaseNumber, type CasebookCase } from "../lib/casebook";
 import { CasebookManager, CasebookPage } from "./CasebookManager";
-import { CasebookBook } from "./CasebookBook";
+import { CasebookBook, validateBookLayout } from "./CasebookBook";
+import { CasebookTextEditor } from "./CasebookTextEditor";
+import { DEFAULT_BOOK_TEXT, type BookText } from "../lib/casebookBookText";
+import { loadBookText } from "../lib/casebookBookTextStore";
 import { bookCompare, groupCasebookCases, planCasebook } from "../lib/casebookBook";
 
 type ZoomLevel =
@@ -79,6 +82,8 @@ export function PublicCasebookView({
   const [reviewFilter,setReviewFilter] = useState("전체");
   const [editing, setEditing] = useState<CasebookCase | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
+  const [printText,setPrintText]=useState<BookText>(DEFAULT_BOOK_TEXT);
+  const [bookEditor,setBookEditor]=useState(false);
   const originalTitle = useRef<string | null>(null);
   const detailRef = useRef<HTMLElement>(null);
   const zoomWrapRef = useRef<HTMLDivElement>(null);
@@ -165,6 +170,7 @@ export function PublicCasebookView({
         setIsAdmin(false);
         setAuthReady(true);
         setEditing(null);
+        setBookEditor(false);
         return;
       }
 
@@ -321,7 +327,7 @@ export function PublicCasebookView({
     ],
   );
 
-  const printReviewedCases = () => {
+  const printReviewedCases = async () => {
     const targets = items
       .filter(
         (item) => item.review_status === "검토완료" && item.published,
@@ -333,6 +339,7 @@ export function PublicCasebookView({
       return;
     }
 
+    try { setPrintText((await loadBookText()).text); } catch (error) {setError(error instanceof Error ? error.message : "사례집 설정을 불러오지 못했습니다.");return;}
     originalTitle.current = document.title;
     document.title = "위험물시설_품질관리_사례집";
     setPrintItems(targets);
@@ -356,6 +363,7 @@ export function PublicCasebookView({
         if (printRoot?.querySelectorAll(".cb-a4-page").length !== plan.finalPage + 1) {
           throw new Error("사례집 목차와 실제 인쇄 페이지가 일치하지 않습니다.");
         }
+        validateBookLayout(printRoot!);
         await prepareCasebookPrint(pages);
       } catch (error) {
         setError(error instanceof Error ? error.message : "출력을 준비하지 못했습니다.");
@@ -373,6 +381,7 @@ export function PublicCasebookView({
 
   const overlays = (
     <>
+      {isAdmin && bookEditor && createPortal(<CasebookTextEditor items={items} onClose={()=>setBookEditor(false)}/>,document.body)}
       {editing &&
         createPortal(
           <div
@@ -416,7 +425,7 @@ export function PublicCasebookView({
       {printItems.length > 0 &&
         createPortal(
           <div className="cb-print-only" data-print-mode="reviewed">
-            <CasebookBook items={printItems}
+            <CasebookBook items={printItems} text={printText}
               renderCase={(item,page)=><CasebookPage item={item} pageNumber={page}/>}/>
           </div>,
           document.body,
@@ -569,13 +578,7 @@ export function PublicCasebookView({
               </small>
             </div>
 
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={printReviewedCases}
-            >
-              검토완료 사례 PDF
-            </button>
+            <div className="kb-banner-actions"><button type="button" className="secondary-button" onClick={()=>setBookEditor(true)}>사례집 구성 편집</button><button type="button" className="secondary-button" onClick={()=>void printReviewedCases()}>검토완료 사례 PDF</button></div>
           </div>
         )}
 
