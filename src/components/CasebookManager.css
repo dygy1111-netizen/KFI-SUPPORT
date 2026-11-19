@@ -1738,3 +1738,30 @@
   margin:0 !important;
   box-sizing:border-box;
 }
+
+/* Whole-page screen zoom: never apply these rules to the editor or PDF portal. */
+.cb-detail-section {
+  scroll-margin-top: 82px;
+  padding-top: 12px !important;
+}
+.public-casebook-zoom-wrap.cb-whole-page-zoom {
+  --case-font: 19px;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: visible;
+  transition: none;
+  min-width: 0;
+}
+.public-casebook-zoom-wrap.cb-whole-page-zoom > .cb-a4-page {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: var(--cb-page-base-width, 920px);
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  zoom: var(--cb-page-scale, 1);
+}
+@media (max-width: 720px) {
+  .public-casebook-zoom-wrap.cb-whole-page-zoom { --case-font: 16px; }
+  .cb-detail-section { scroll-margin-top: 66px; }
+}
