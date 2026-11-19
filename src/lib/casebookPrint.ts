@@ -6,23 +6,15 @@
  * 내용이 짧으면 하단 약 25%를 비우고, 긴 사례는 가독성과 한 페이지 수록을 우선합니다.
  */
 
-// A4 fitting below determines the *actual* size; these are upper limits,
-// not fixed sizes. Taller limits reclaim unused white space for inspection photos.
-const SINGLE_PHOTO_MAX_MM = 115;
-const DOUBLE_PHOTO_MAX_MM = 90;
-const REVIEWED_SINGLE_PHOTO_MAX_MM = 118;
-const REVIEWED_DOUBLE_PHOTO_MAX_MM = 92;
-// Three/four pictures are arranged in two rows.
-const MULTI_PHOTO_MAX_MM = 52;
-const REVIEWED_MULTI_PHOTO_MAX_MM = 54;
-const PHOTO_MIN_MM = 20;
-const MULTI_PHOTO_MIN_MM = 11;
+// Fixed physical size on A4, independent of editor widths, image ratio,
+// amount of text, and the scaling used to fit a page.
+export const PRINT_PHOTO_HEIGHT_MM = 60;
+const PRINT_PHOTO_GAP_MM = 2;
 const TARGET_CONTENT_RATIO = 0.75;
 // '품질사례 > 검토완료 사례 PDF'는 하단 약 13.5%를 남기는 것을 우선합니다.
 const REVIEWED_TARGET_CONTENT_RATIO = 0.865;
 const MIN_PRINT_PAD_MM = 2.1;
 const MIN_REVIEWED_PRINT_PAD_MM = 2.7;
-const MAX_REVIEWED_PRINT_PAD_MM = 6.5;
 const EXTRA_BOTTOM_MM = 8;
 const PRINT_STYLE_ID = "kfi-casebook-scaled-print";
 
@@ -83,140 +75,78 @@ function ensurePrintStyle() {
       z-index: 2;
     }
 
+    /* The same physical label column and photo-cell padding on every A4 page. */
+    .cb-print-only .cb-table-row {
+      grid-template-columns: var(--print-label-width, 28mm) minmax(0, 1fr);
+    }
     .cb-print-only .cb-table-content:has(.cb-photo-area) {
+      min-width: 0;
       justify-content: flex-start;
-      padding-top: 2mm;
-      padding-bottom: 2mm;
+      padding: var(--print-photo-pad, 1mm) !important;
     }
 
-    /*
-     * Give each printed picture a physical width derived from its aspect ratio
-     * and the A4 height budget. Portraits no longer sit at opposite ends of two
-     * oversized 50%-width columns. The pair stays centred with a narrow gap.
-     */
-    .cb-print-only .cb-preview-photos.one {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    /* Fixed cells: one photo fills the entire photo width; two share it
+       evenly. Keep all source pixels visible, deliberately allowing aspect
+       ratio changes in the PDF only. Never crop inspection evidence. */
+    .cb-print-only .cb-a4-page .cb-preview-photos.one,
+    .cb-print-only .cb-a4-page .cb-preview-photos.two,
+    .cb-print-only .cb-a4-page .cb-preview-photos.multi {
+      display: grid !important;
+      width: 100%;
+      height: var(--print-photo, 60mm);
+      gap: var(--print-photo-gap, 2mm);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1fr);
+      align-items: stretch;
+      justify-items: stretch;
+      box-sizing: border-box;
+    }
+    .cb-print-only .cb-a4-page .cb-preview-photos.one {
+      grid-template-columns: minmax(0, 1fr);
       gap: 0;
     }
-    .cb-print-only .cb-preview-photos.one .cb-photo-resize-slot {
-      width: min(100%, calc(var(--print-photo, 80mm) * var(--photo-ratio, 1)));
-      flex: 0 0 auto;
+    .cb-print-only .cb-a4-page .cb-preview-photos.multi {
+      grid-template-rows: repeat(2, minmax(0, 1fr));
     }
-    .cb-print-only .cb-preview-photos.two {
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: center;
-      align-items: center;
-      gap: 3mm;
+    .cb-print-only .cb-a4-page .cb-preview-photos:has(.cb-photo-placeholder) {
+      height: 22mm;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
     }
-    .cb-print-only .cb-preview-photos.two .cb-photo-resize-slot {
-      width: min(calc(50% - 1.5mm), calc(var(--print-photo, 80mm) * var(--photo-ratio, 1)));
-      flex: 0 0 auto;
-    }
-    .cb-print-only .cb-preview-photos.multi {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: center;
-      justify-items: center;
-      gap: 2.5mm;
-    }
-    .cb-print-only .cb-preview-photos.multi .cb-photo-resize-slot {
-      width: min(100%, calc(var(--print-photo, 50mm) * var(--photo-ratio, 1)));
-    }
-    .cb-print-only .cb-preview-photos.three .cb-photo-resize-slot:last-child {
-      grid-column: 1 / -1;
-      justify-self: center;
-    }
-    /* Remove the old invisible 100%-wide frame around a small portrait. */
-    .cb-print-only .cb-preview-photos .cb-photo-resize-slot,
-    .cb-print-only .cb-preview-photos .cb-photo-size-frame {
-      overflow: hidden;
-    }
-    .cb-print-only .cb-preview-photos .cb-photo-size-frame {
+    .cb-print-only .cb-a4-page .cb-preview-photos .cb-photo-resize-slot,
+    .cb-print-only .cb-a4-page .cb-preview-photos .cb-photo-size-frame {
+      display: block !important;
       width: 100% !important;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .cb-print-only .cb-preview-photos .cb-photo-size-frame img {
-      display: block;
-      width: 100% !important;
-      height: auto !important;
-      max-width: 100%;
-      max-height: var(--print-photo, 80mm);
-      object-fit: contain;
-      object-position: center;
-      margin: 0;
-      border: 0;
-      background: transparent;
-    }
-
-    /*
-     * 검토완료 사례 출력: 가로형/세로형 사진이 섞여도 원본을 자르지 않고
-     * 두 칸의 가운데에 각각 배치합니다.
-     * 세로형은 조금 높고 가로형은 조금 넓어 비슷한 면적으로 보입니다.
-     */
-    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos.two {
-      align-items: center;
-      gap: 2mm;
-    }
-
-    /*
-     * 검토완료 사례 PDF만 사진칸의 좌우 내부 여백 축소.
-     * 표의 다른 칸에는 영향을 주지 않습니다.
-     */
-    .cb-print-only[data-print-mode="reviewed"]
-    .cb-table-content:has(.cb-photo-area) {
-      padding-left: 1mm;
-      padding-right: 1mm;
-    }
-
-    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos {
-      width: 100%;
-      gap: 2mm;
-    }
-
-    /*
-     * All reviewed photographs are fitted inside their cells WITHOUT cropping.
-     * The former object-fit:cover clipped tall tank and weld photos.
-     * A user-selected horizontal stretch (scaleX) remains independent.
-     */
-    .cb-print-only[data-print-mode="reviewed"] .cb-preview-photos img {
-      box-sizing: border-box;
-      width: auto;
-      height: auto;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
       min-width: 0;
       min-height: 0;
-      max-width: 100%;
-      max-height: var(--print-photo, 80mm);
-      object-fit: contain;
-      object-position: center;
-      margin: 0 auto;
-      background: transparent;
-      border: 0;
-    }
-
-    /* 고정 높이 사진 상자를 사용하지 않아 원본 비율과 실제 높이가 일치합니다. */
-    .cb-print-only .cb-preview-photos img {
-      display: block;
-      width: auto;
-      height: auto;
-      min-width: 0;
-      max-width: 100%;
-      max-height: var(--print-photo, 80mm);
-      object-fit: contain;
-      object-position: center;
-      margin: 0 auto;
+      overflow: hidden;
+      box-sizing: border-box;
+      margin: 0;
       padding: 0;
-      background: transparent;
-      border: 0;
-      border-radius: 0;
     }
-
-    /* Two photo rows share the A4 height budget. */
-    .cb-print-only .cb-preview-photos.multi .cb-photo-size-frame img {
-      max-height: var(--print-photo, 39mm);
+    .cb-print-only .cb-a4-page .cb-preview-photos.three .cb-photo-resize-slot:last-child {
+      grid-column: 1 / -1;
+      width: calc((100% - var(--print-photo-gap, 2mm)) / 2) !important;
+      justify-self: center;
+    }
+    .cb-print-only .cb-a4-page .cb-preview-photos .cb-photo-size-frame img {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      min-width: 0;
+      min-height: 0;
+      object-fit: fill !important;
+      transform: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-sizing: border-box;
     }
     .cb-print-only .cb-photo-area { gap: 1mm; }
     .cb-print-only .cb-photo-copy:empty { display: none; }
@@ -389,14 +319,18 @@ function drawUniformTableLines(page: HTMLElement): void {
 function applyScale(
   page: HTMLElement,
   scale: number,
-  photoMm: number,
   padMm?: number,
 ) {
   page.style.setProperty("--print-scale", scale.toFixed(4));
   const oldWidth = page.style.getPropertyValue("--print-body-width");
   const newWidth = (186 / scale).toFixed(3) + "mm";
   page.style.setProperty("--print-body-width", newWidth);
-  page.style.setProperty("--print-photo", photoMm.toFixed(2) + "mm");
+  // Compensate for the transform on the body so the physical printed
+  // photo size does not vary when text needs to be fitted.
+  page.style.setProperty("--print-photo", (PRINT_PHOTO_HEIGHT_MM / scale).toFixed(4) + "mm");
+  page.style.setProperty("--print-label-width", (28 / scale).toFixed(4) + "mm");
+  page.style.setProperty("--print-photo-pad", (1 / scale).toFixed(4) + "mm");
+  page.style.setProperty("--print-photo-gap", (PRINT_PHOTO_GAP_MM / scale).toFixed(4) + "mm");
 
   const reviewed = page.closest(
     '.cb-print-only[data-print-mode="reviewed"]',
@@ -447,52 +381,6 @@ function fits(page: HTMLElement, target: FitTarget): boolean {
   );
 }
 
-/** 설정된 비율 안에서 원본 사진을 자르지 않고 가능한 크게 표시합니다. */
-function maximizePhoto(
-  page: HTMLElement,
-  scale: number,
-  minMm: number,
-  maxMm: number,
-  target: FitTarget,
-) {
-  if (maxMm <= 0) return;
-
-  let low = minMm;
-  let high = maxMm;
-
-  for (let i = 0; i < 12; i++) {
-    const mid = (low + high) / 2;
-    applyScale(page, scale, mid);
-    if (fits(page, target)) low = mid;
-    else high = mid;
-  }
-
-  applyScale(page, scale, Math.max(minMm, low - 0.1));
-}
-
-/**
- * 검토완료 사례 PDF: 사진을 먼저 충분히 키운 다음,
- * 셀 위아래 여백을 일정 범위에서 늘려 표가 지나치게 위에 몰리지 않게 합니다.
- */
-function fillRemainingWithPadding(
-  page: HTMLElement,
-  scale: number,
-  photoMm: number,
-) {
-  let low = MIN_REVIEWED_PRINT_PAD_MM;
-  let high = MAX_REVIEWED_PRINT_PAD_MM;
-
-  for (let i = 0; i < 12; i++) {
-    const mid = (low + high) / 2;
-    applyScale(page, scale, photoMm, mid);
-
-    if (fits(page, "quarter")) low = mid;
-    else high = mid;
-  }
-
-  applyScale(page, scale, photoMm, Math.max(MIN_REVIEWED_PRINT_PAD_MM, low - 0.02));
-}
-
 export async function prepareCasebookPrint(
   pages: HTMLElement[],
 ): Promise<void> {
@@ -511,19 +399,6 @@ export async function prepareCasebookPrint(
     ),
   );
 
-  // Ratios must be measured *after* image decode. CSS derives a real printed
-  // photo width from the chosen A4 height and the image's natural dimensions.
-  // This keeps rulers, weld defects and dimensions visible without cropping.
-  pages.forEach(page => {
-    page.querySelectorAll<HTMLImageElement>(".cb-preview-photos img").forEach(img => {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        const ratio = img.naturalWidth / img.naturalHeight;
-        img.closest<HTMLElement>(".cb-photo-resize-slot")
-          ?.style.setProperty("--photo-ratio", ratio.toFixed(6));
-      }
-    });
-  });
-
   const oversized: number[] = [];
   const scales = [
     1, 0.98, 0.96, 0.94, 0.92, 0.90,
@@ -531,64 +406,23 @@ export async function prepareCasebookPrint(
   ];
 
   pages.forEach((page, index) => {
-    const count = page.querySelectorAll(".cb-preview-photos img").length;
     const reviewed = page.closest(
       '.cb-print-only[data-print-mode="reviewed"]',
     ) !== null;
-    const photoMax =
-      count >= 3
-        ? (reviewed ? REVIEWED_MULTI_PHOTO_MAX_MM : MULTI_PHOTO_MAX_MM)
-        : count === 2
-          ? (reviewed ? REVIEWED_DOUBLE_PHOTO_MAX_MM : DOUBLE_PHOTO_MAX_MM)
-          : count === 1
-            ? (reviewed ? REVIEWED_SINGLE_PHOTO_MAX_MM : SINGLE_PHOTO_MAX_MM)
-            : 0;
-    const photoMin = count >= 3 ? MULTI_PHOTO_MIN_MM : count ? PHOTO_MIN_MM : 0;
     const initialPad = reviewed ? MIN_REVIEWED_PRINT_PAD_MM : MIN_PRINT_PAD_MM;
 
     let fitted = false;
-
-    // 1순위: 검토완료 사례는 하단 약 13.5%, 기타 출력은 기존 25%를 우선합니다.
-    for (const scale of scales) {
-      applyScale(page, scale, photoMin, initialPad);
-      if (!fits(page, "quarter")) continue;
-
-      maximizePhoto(page, scale, photoMin, photoMax, "quarter");
-      if (reviewed) {
-        page.style.setProperty(
-          "--print-pad",
-          MIN_REVIEWED_PRINT_PAD_MM.toFixed(2) + "mm",
-        );
-      }
-
-      // 이미지에 빈 고정 상자를 만들지 않고 표의 상하 간격으로 남는 영역 조절
-      if (reviewed && count > 0) {
-        const photoMm = Number.parseFloat(
-          page.style.getPropertyValue("--print-photo"),
-        );
-        fillRemainingWithPadding(page, scale, photoMm);
-      }
-
-      fitted = true;
-      break;
-    }
-
-    // 내용이 매우 긴 경우에만 하단 여백을 양보합니다.
-    if (!fitted) {
+    // Keep photographs fixed at 60mm; fit the text and other rows instead.
+    // Prefer the existing whitespace target, then use the full printable area.
+    // Fail clearly instead of silently shrinking a photo or losing text.
+    for (const target of ["quarter", "page"] as const) {
       for (const scale of scales) {
-        applyScale(page, scale, photoMin, initialPad);
-        if (!fits(page, "page")) continue;
-
-        maximizePhoto(page, scale, photoMin, photoMax, "page");
-        if (reviewed) {
-          page.style.setProperty(
-            "--print-pad",
-            MIN_REVIEWED_PRINT_PAD_MM.toFixed(2) + "mm",
-          );
-        }
+        applyScale(page, scale, initialPad);
+        if (!fits(page, target)) continue;
         fitted = true;
         break;
       }
+      if (fitted) break;
     }
 
     if (!fitted) oversized.push(index + 1);
@@ -598,7 +432,7 @@ export async function prepareCasebookPrint(
     throw new Error(
       "A4 한 장을 초과하는 사례: " +
       oversized.join(", ") +
-      "쪽. 해당 사례의 문안을 줄여주세요.",
+      "쪽. 사진 높이 60mm를 유지하면 A4에 맞지 않습니다. 해당 사례의 문안을 확인해주세요.",
     );
   }
 
