@@ -23,7 +23,10 @@ import { loadCasebook } from '../lib/casebookQuery';
 import { CasebookImport } from "./CasebookImport";
 import { CasebookTextUpdate } from "./CasebookTextUpdate";
 import { CasebookLegalUpdate } from "./CasebookLegalUpdate";
-import { CasebookBook } from "./CasebookBook";
+import { CasebookBook, validateBookLayout } from "./CasebookBook";
+import { CasebookTextEditor } from "./CasebookTextEditor";
+import { DEFAULT_BOOK_TEXT, type BookText } from "../lib/casebookBookText";
+import { loadBookText } from "../lib/casebookBookTextStore";
 import { bookCompare } from "../lib/casebookBook";
 
 type Draft = Omit<
@@ -301,6 +304,8 @@ export function CasebookManager({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const originalTitle = useRef<string | null>(null);
   const [printItems, setPrintItems] = useState<CasebookCase[]>([]);
+  const [printText,setPrintText]=useState<BookText>(DEFAULT_BOOK_TEXT);
+  const [bookEditor,setBookEditor]=useState(false);
   const [legacySchema, setLegacySchema] = useState(false);
   const [photoSizeReady, setPhotoSizeReady] = useState(false);
   const [photoStretchReady, setPhotoStretchReady] = useState(false);
@@ -717,7 +722,7 @@ export function CasebookManager({
       ? current.filter(id=>!ids.includes(id)) : [...new Set([...current,...ids])]);
   };
 
-  const printCases = (mode: "selected" | "all") => {
+  const printCases = async (mode: "selected" | "all") => {
     const targets =
       mode === "all"
         ? items
@@ -728,6 +733,7 @@ export function CasebookManager({
       return;
     }
 
+    try {setPrintText((await loadBookText()).text);}catch(e){notify(e instanceof Error?e.message:"사례집 설정을 불러오지 못했습니다.",true);return;}
     originalTitle.current = document.title;
     document.title = `위험물시설_품질관리_사례_${mode === "all" ? "전체" : "선택"}`;
     setPrintItems([...targets].sort(bookCompare));
@@ -737,6 +743,9 @@ export function CasebookManager({
       await document.fonts.ready;
       const pages = Array.from(document.querySelectorAll<HTMLElement>('.cb-print-only .cb-a4-page:not(.kb-sheet):not(.kb-cover)'));
       try {
+        const root=document.querySelector<HTMLElement>(".cb-print-only");
+        if(!root)throw new Error("출력 준비에 실패했습니다.");
+        validateBookLayout(root);
         await prepareCasebookPrint(pages);
         window.print();
       } catch(error) {
@@ -803,6 +812,7 @@ export function CasebookManager({
 
         {showImport && (
           <>
+            <button type="button" className="secondary-button" onClick={()=>setBookEditor(true)}>사례집 구성 편집 (표지·목차·개요)</button>
             <CasebookTextUpdate
               items={items}
               onComplete={load}
@@ -1406,9 +1416,10 @@ export function CasebookManager({
         </section>}
       </div>
 
+      {showImport && bookEditor && createPortal(<CasebookTextEditor items={items} onClose={()=>setBookEditor(false)}/>,document.body)}
       {showList && printItems.length > 0 && createPortal(
         <div className="cb-print-only">
-          <CasebookBook items={printItems}
+          <CasebookBook items={printItems} text={printText}
             renderCase={(item,page)=><CasebookPage item={item} pageNumber={page}/>}/>
         </div>, document.body
       )}
