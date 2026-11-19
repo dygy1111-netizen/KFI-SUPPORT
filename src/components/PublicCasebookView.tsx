@@ -118,12 +118,13 @@ export function PublicCasebookView({
         const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
         const toolbarHeight = toolbar.getBoundingClientRect().height;
         // Reserve space for the site's navigation, the toolbar and bottom gap.
-        const usableHeight = Math.max(200, viewportHeight - toolbarHeight - 112);
+        const topOfPage = Math.max(0, detailRef.current?.getBoundingClientRect().top ?? 0);
+        const usableHeight = Math.max(200, viewportHeight - toolbarHeight - topOfPage - 28);
         const widthLimit = availableWidth / width;
         const scale = zoom === "small"
           ? Math.min(0.78, usableHeight / Math.max(1,height), widthLimit)
           : Math.min(zoom === "large" ? 1.16 : 1, widthLimit);
-        const rounded = Math.max(0.12, Math.floor(scale*1000)/1000);
+        const rounded = Math.max(0.05, Math.floor(scale*1000)/1000);
         setPageScale(old => Math.abs(old-rounded) >= 0.002 ? rounded : old);
       });
     };
@@ -146,12 +147,11 @@ export function PublicCasebookView({
     };
   }, [selected, zoom]);
 
-  // Skip the tall promotional hero on detail entry; the toolbar is the
-  // starting point for reading the page fitted to the monitor.
+  // Case details omit the tall landing-page hero; start with the toolbar.
   useLayoutEffect(() => {
     if (!selected) return;
     const frame = requestAnimationFrame(() => {
-      detailRef.current?.scrollIntoView({block:"start", behavior:"instant"});
+      window.scrollTo({top:0, behavior:"instant"});
     });
     return () => cancelAnimationFrame(frame);
   }, [selected?.id]);
@@ -437,19 +437,6 @@ export function PublicCasebookView({
   if (selected) {
     return (
       <>
-        <section className="page-hero">
-          <div className="hero-inner">
-            <h1>
-              {config.casesTitle}
-            </h1>
-
-            <p>
-              {config.casesText}
-            </p>
-          </div>
-        </section>
-
-
         <section
           className="content-section compact cb-detail-section"
           ref={detailRef}
