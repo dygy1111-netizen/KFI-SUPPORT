@@ -1838,7 +1838,8 @@
   width: 100%;
   min-width: 0;
 }
-.cb-a4-page .cb-print-body .cb-table-row:has(.cb-standard-copy) .cb-table-content {
+/* Consistent pale blue text panels; photographs and left labels remain white. */
+.cb-a4-page .cb-print-body .cb-table-row:not(:has(.cb-photo-area)) .cb-table-content {
   background: #eff3f5;
   margin-block: .35em;
 }
