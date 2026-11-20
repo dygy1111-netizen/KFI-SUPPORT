@@ -1669,7 +1669,7 @@
 }
 .public-casebook-zoom-wrap .cb-a4-page .cb-table-content:has(.cb-photo-area) {
   justify-content: flex-start;
-  padding: 1.075269cqw !important; /* physical PDF: 2 mm / 186 mm */
+  padding: 0 !important; /* photo fills its column, without outer inset */
 }
 .public-casebook-zoom-wrap .cb-a4-page .cb-photo-area {gap: .537634cqw;min-width:0;}
 .public-casebook-zoom-wrap .cb-a4-page .cb-photo-copy:empty {display:none;}
@@ -1679,7 +1679,7 @@
   display:grid !important;
   width:100%;
   height: auto;
-  aspect-ratio:154 / 60;
+  aspect-ratio:158 / 60;
   gap:1.075269cqw;
   grid-template-columns:repeat(2,minmax(0,1fr));
   grid-template-rows:minmax(0,1fr);
@@ -1695,7 +1695,7 @@
   grid-template-rows:repeat(2,minmax(0,1fr));
 }
 .public-casebook-zoom-wrap .cb-a4-page .cb-preview-photos:has(.cb-photo-placeholder) {
-  aspect-ratio:154 / 22;
+  aspect-ratio:158 / 22;
   grid-template-columns:minmax(0,1fr);
   grid-template-rows:minmax(0,1fr);
 }
@@ -1849,14 +1849,15 @@
    The base responsive and print column widths remain authoritative. */
 .cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-content {
   background: transparent;
+  padding: 0;
 }
 .cb-a4-page .cb-print-body .cb-page-footer {
   border-top-color: #b6c3cc;
   color: #617b89;
 }
 .cb-a4-page .cb-print-body .cb-page-footer b { color: #617b89; font-weight: 600; }
-/* Match text and photo insets while preserving the original 154 x 60 mm
-   print photo area and the existing screen / multi-photo layout. */
+/* Retain text-panel insets; photo rows use the full 158 mm content width
+   and retain the existing 60 mm print image height and multi-photo gap. */
 .public-casebook-zoom-wrap .cb-a4-page .cb-print-body .cb-table-content {
   padding-inline: 1.075269cqw;
 }

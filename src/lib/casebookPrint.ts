@@ -86,7 +86,7 @@ function ensurePrintStyle() {
     .cb-print-only .cb-table-content:has(.cb-photo-area) {
       min-width: 0;
       justify-content: flex-start;
-      padding: var(--print-photo-pad, 2mm) !important;
+      padding: 0 !important;
     }
 
     /* Stretch only non-photo table rows. The photo cell and its label are
