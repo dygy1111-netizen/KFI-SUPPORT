@@ -1795,8 +1795,7 @@
 .cb-a4-page .cb-print-body .cb-table-row {
   border-top: 1px solid #b6c3cc;
 }
-.cb-a4-page .cb-print-body .cb-table-row:first-child,
-.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) {
+.cb-a4-page .cb-print-body .cb-table-row:first-child {
   border-top: 0;
 }
 .cb-a4-page .cb-print-body .cb-table-row:has(.cb-standard-copy) {
@@ -1845,36 +1844,23 @@
 }
 .cb-a4-page .cb-print-body .cb-strong { font-weight: 650; }
 .cb-a4-page .cb-print-body .cb-bullet::before { color: #617b89; font-weight: 600; }
-/* Photo heading is above a full-width light panel; preserve the original
-   photo grid and its one-to-four-photo handling, including print height. */
-.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) {
-  grid-template-columns: minmax(0, 1fr);
-  margin-block: .3em .6em;
-}
-.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-label {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: .3em;
-  padding: 0 0 .35em;
-}
-.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-label::before {
-  display: none;
-}
+/* Keep photographs on the same two-column grid as every other field.
+   The base responsive and print column widths remain authoritative. */
 .cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-content {
-  background: #f5f8f9;
-  align-items: center;
+  background: transparent;
 }
 .cb-a4-page .cb-print-body .cb-page-footer {
   border-top-color: #b6c3cc;
   color: #617b89;
 }
 .cb-a4-page .cb-print-body .cb-page-footer b { color: #617b89; font-weight: 600; }
-/* 154 mm original photo width inside the 182 mm padded full-width panel;
-   screen retains the existing 154:60 proportion, PDF retains fixed 60 mm height. */
-.public-casebook-zoom-wrap .cb-a4-page .cb-print-body .cb-preview-photos,
-.cb-print-only .cb-a4-page .cb-print-body .cb-preview-photos {
-  width: 84.6153846% !important;
-  margin-inline: auto;
+/* Match text and photo insets while preserving the original 154 x 60 mm
+   print photo area and the existing screen / multi-photo layout. */
+.public-casebook-zoom-wrap .cb-a4-page .cb-print-body .cb-table-content {
+  padding-inline: 1.075269cqw;
+}
+.cb-print-only .cb-a4-page .cb-print-body .cb-table-content {
+  padding-inline: var(--print-photo-pad, 2mm);
 }
 .cb-print-only .cb-a4-page .cb-print-body .cb-case-head h1 { font-size: 21pt; }
 .cb-print-only .cb-a4-page .cb-print-body .cb-case-head > span { font-size: 11pt; }
