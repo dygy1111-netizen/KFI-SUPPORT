@@ -1765,3 +1765,124 @@
   .public-casebook-zoom-wrap.cb-whole-page-zoom { --case-font: 16px; }
   .cb-detail-section { scroll-margin-top: 66px; }
 }
+
+/* Casebook editorial layout, selected proof 5.
+   Scope to case interiors only; cover, contents and inspection introductions
+   have their own publication styles. All case fields remain unchanged. */
+.cb-a4-page:has(> .cb-print-body) {
+  font-family: "Pretendard", "NanumBarunGothic", "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", sans-serif;
+  color: #243444;
+  letter-spacing: -.018em;
+}
+.cb-a4-page .cb-print-body .cb-case-head {
+  border-bottom: 1px solid #203b50;
+  padding-bottom: .65em;
+  margin-bottom: .65em;
+}
+.cb-a4-page .cb-print-body .cb-case-head > span {
+  color: #617b89;
+  font-weight: 600;
+}
+.cb-a4-page .cb-print-body .cb-case-head h1 {
+  color: #203b50;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.04em;
+}
+.cb-a4-page .cb-print-body .cb-table {
+  border: 0;
+}
+.cb-a4-page .cb-print-body .cb-table-row {
+  border-top: 1px solid #b6c3cc;
+}
+.cb-a4-page .cb-print-body .cb-table-row:first-child,
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) {
+  border-top: 0;
+}
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-standard-copy) {
+  border-top-color: #203b50;
+}
+.cb-a4-page .cb-print-body .cb-table-label,
+.cb-a4-page .cb-print-body .cb-table-content {
+  border: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.cb-a4-page .cb-print-body .cb-table-label {
+  min-height: 0;
+  position: relative;
+  background: transparent;
+  color: #203b50;
+  text-align: left;
+  font-weight: 650;
+  padding-left: .85em;
+}
+.cb-a4-page .cb-print-body .cb-table-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .5em;
+  bottom: .5em;
+  width: .25em;
+  background: #b6c3cc;
+  pointer-events: none;
+}
+.cb-a4-page .cb-print-body .cb-table-row:first-child .cb-table-label::before,
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-standard-copy) .cb-table-label::before {
+  background: #617b89;
+}
+.cb-a4-page .cb-print-body .cb-table-content {
+  color: #243444;
+}
+.cb-a4-page .cb-print-body .cb-table-content > .cb-copy,
+.cb-a4-page .cb-print-body .cb-table-content > .cb-photo-area {
+  width: 100%;
+  min-width: 0;
+}
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-standard-copy) .cb-table-content {
+  background: #eff3f5;
+  margin-block: .35em;
+}
+.cb-a4-page .cb-print-body .cb-strong { font-weight: 650; }
+.cb-a4-page .cb-print-body .cb-bullet::before { color: #617b89; font-weight: 600; }
+/* Photo heading is above a full-width light panel; preserve the original
+   photo grid and its one-to-four-photo handling, including print height. */
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) {
+  grid-template-columns: minmax(0, 1fr);
+  margin-block: .3em .6em;
+}
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-label {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: .3em;
+  padding: 0 0 .35em;
+}
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-label::before {
+  display: none;
+}
+.cb-a4-page .cb-print-body .cb-table-row:has(.cb-photo-area) .cb-table-content {
+  background: #f5f8f9;
+  align-items: center;
+}
+.cb-a4-page .cb-print-body .cb-page-footer {
+  border-top-color: #b6c3cc;
+  color: #617b89;
+}
+.cb-a4-page .cb-print-body .cb-page-footer b { color: #617b89; font-weight: 600; }
+/* 154 mm original photo width inside the 182 mm padded full-width panel;
+   screen retains the existing 154:60 proportion, PDF retains fixed 60 mm height. */
+.public-casebook-zoom-wrap .cb-a4-page .cb-print-body .cb-preview-photos,
+.cb-print-only .cb-a4-page .cb-print-body .cb-preview-photos {
+  width: 84.6153846% !important;
+  margin-inline: auto;
+}
+.cb-print-only .cb-a4-page .cb-print-body .cb-case-head h1 { font-size: 21pt; }
+.cb-print-only .cb-a4-page .cb-print-body .cb-case-head > span { font-size: 11pt; }
+.cb-print-only .cb-a4-page .cb-print-body .cb-table-label {
+  padding-left: 3mm;
+}
+/* The old vector overlay draws a closed table and column divider. The new
+   row separators are drawn by CSS, for both screen and print. */
+.cb-print-only .cb-a4-page:has(> .cb-print-body) > .cb-print-table-lines {
+  display: none !important;
+}
