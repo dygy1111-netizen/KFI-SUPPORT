@@ -28,6 +28,14 @@
       <p class="sidebar-foot">수록 자료는 검사 현장 활용을 위한 참고자료입니다. 실제 적용 법령·기술기준을 확인하시기 바랍니다.</p>
     </aside>
     <main id="main" class="main">
+      <section class="quick-search" aria-label="사례 빠른 검색">
+        <div class="quick-search-top">
+          <div><span class="section-eyebrow">QUICK SEARCH / CASE LIBRARY</span><h2>사례 빠른 검색</h2></div>
+          <a class="quick-search-link" href="#list">전체 사례 바로 보기 →</a>
+        </div>
+        <label class="searchbox"><span aria-hidden="true">⌕</span><span class="sr-only">사례 검색</span><input id="searchInput" type="search" placeholder="사례명, 검사기준, 발생사유 검색" autocomplete="off"><kbd>검색</kbd></label>
+        <p class="quick-search-hint">검색어를 입력하면 관련 사례가 바로 표시됩니다.</p>
+      </section>
       <section id="homeView" aria-label="사례집 표지 및 개요">
         <div class="cover">
           <div class="cover-meta"><span id="coverLabel">위험물 안전관리 기술자료</span><span id="coverYear">2026</span></div>
@@ -45,7 +53,6 @@
       <section class="browse" aria-label="사례 검색 및 목록" id="browseView">
         <div class="browse-heading"><div><div class="section-eyebrow">02 / CASE LIBRARY</div><h2 id="browseHeading">전체 사례</h2><p id="browseCount">검사구분별로 사례를 탐색할 수 있습니다.</p></div><button id="clearFilter" type="button" class="text-button">전체 보기</button></div>
         <div id="introPanel" class="intro-panel" hidden></div>
-        <label class="searchbox"><span aria-hidden="true">⌕</span><span class="sr-only">사례 검색</span><input id="searchInput" type="search" placeholder="사례 제목 · 검사기준 · 개선조치 검색" autocomplete="off"><kbd>검색</kbd></label>
         <div class="list-toolbar"><span id="resultCount">사례 목록</span><span id="snapshotLabel"></span></div>
         <div id="caseList" class="case-list"></div>
         <div id="emptyMessage" class="empty" hidden>검색 결과가 없습니다. 다른 검색어를 입력하거나 검사구분을 변경해 주세요.</div>

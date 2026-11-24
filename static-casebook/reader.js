@@ -68,7 +68,10 @@
   field("footerInfo", "공개·검토완료 " + snapshot.count + "건 · " + dateText);
 
   function goCategory(category) {
-    location.hash = category === "전체" ? "home" : "category/" + encodeURIComponent(category);
+    $("searchInput").value = "";
+    const target = category === "전체" ? "#home" : "#category/" + encodeURIComponent(category);
+    if (location.hash === target) showRoute();
+    else location.hash = target;
   }
   function renderNav() {
     const nav = $("categoryNav");
@@ -268,7 +271,7 @@
       state.category = hash.startsWith("category/") && categoryCounts.has(hash.slice(9))
         ? hash.slice(9) : "전체";
       $("detailView").hidden = true;
-      $("homeView").hidden = state.category !== "전체";
+      $("homeView").hidden = state.category !== "전체" || hash === "search" || hash === "list";
       $("browseView").hidden = false;
       renderCards();
       document.title = "위험물시설 품질관리 사례집 | 독립형 열람판";
@@ -276,7 +279,23 @@
     renderNav();
     if (location.hash) window.scrollTo({top:0,behavior:"instant"});
   }
-  $("searchInput").addEventListener("input", renderCards);
+  $("searchInput").addEventListener("input", () => {
+    if ($("searchInput").value.trim()) {
+      if (location.hash !== "#search") location.hash = "search";
+      else {
+        state.category = "전체";
+        $("homeView").hidden = true;
+        $("browseView").hidden = false;
+        $("detailView").hidden = true;
+        renderCards();
+        renderNav();
+      }
+    } else if (location.hash === "#search") {
+      location.hash = "list";
+    } else {
+      renderCards();
+    }
+  });
   $("clearFilter").addEventListener("click", () => goCategory("전체"));
   $("backButton").addEventListener("click", () => goCategory(state.category));
   $("printButton").addEventListener("click", () => window.print());
