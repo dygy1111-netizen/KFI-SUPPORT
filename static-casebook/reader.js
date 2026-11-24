@@ -23,7 +23,7 @@
     "누설감지설비":"leak","교반기":"agitator","통기관대기밸브":"breather",
     "비상압력배출장치":"emergency"
   };
-  const state = { category:"전체", selected:null };
+  const state = { category:"전체", selected:null, returnHash:null };
   const categoryCounts = new Map();
   cases.forEach(item => categoryCounts.set(item.inspection_type, 1+(categoryCounts.get(item.inspection_type)||0)));
   function node(tag, className, content) {
@@ -174,7 +174,10 @@
       appendText(foot,"strong","","사례 보기 ↗");
       body.append(foot);
       button.append(imageFrame,body);
-      button.addEventListener("click", () => { location.hash = "case/" + encodeURIComponent(item.id); });
+      button.addEventListener("click", () => {
+        state.returnHash = location.hash || "#home";
+        location.hash = "case/" + encodeURIComponent(item.id);
+      });
       fragment.append(button);
     }
     list.append(fragment);
@@ -261,6 +264,8 @@
     let hash;
     try { hash = decodeURIComponent(location.hash.slice(1)); } catch { hash = "home"; }
     const matching = hash.startsWith("case/") ? byId.get(hash.slice(5)) : null;
+    const searching = !matching && hash === "search";
+    document.body.classList.toggle("search-mode", searching);
     if (matching) {
       state.selected = matching;
       $("homeView").hidden = true; $("browseView").hidden = true; $("detailView").hidden = false;
@@ -281,23 +286,30 @@
   }
   $("searchInput").addEventListener("input", () => {
     if ($("searchInput").value.trim()) {
+      // Update immediately: a hashchange event should not be required for
+      // the cover/overview to disappear or for matching cards to appear.
+      state.category = "전체";
+      state.selected = null;
+      document.body.classList.add("search-mode");
+      $("homeView").hidden = true;
+      $("detailView").hidden = true;
+      $("browseView").hidden = false;
+      renderCards();
+      renderNav();
       if (location.hash !== "#search") location.hash = "search";
-      else {
-        state.category = "전체";
-        $("homeView").hidden = true;
-        $("browseView").hidden = false;
-        $("detailView").hidden = true;
-        renderCards();
-        renderNav();
-      }
     } else if (location.hash === "#search") {
       location.hash = "list";
     } else {
-      renderCards();
+      showRoute();
     }
   });
   $("clearFilter").addEventListener("click", () => goCategory("전체"));
-  $("backButton").addEventListener("click", () => goCategory(state.category));
+  $("backButton").addEventListener("click", () => {
+    // Keep the search term and its result list when returning from a match.
+    const target = state.returnHash || "#category/" + encodeURIComponent(state.category);
+    if (location.hash === target) showRoute();
+    else location.hash = target;
+  });
   $("printButton").addEventListener("click", () => window.print());
   $("copyLink").addEventListener("click", async () => {
     const button = $("copyLink");

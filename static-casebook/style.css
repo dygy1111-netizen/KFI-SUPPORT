@@ -12,3 +12,15 @@
 .quick-search-hint{color:#8194a0;font-size:11px;margin:10px 2px 0}
 @media(max-width:650px){.quick-search{padding:16px 14px 15px;margin-bottom:14px}.quick-search-top h2{font-size:17px}.quick-search-top{margin-bottom:12px}.quick-search-link{font-size:11px}.quick-search .searchbox{min-height:54px;padding-inline:12px}.quick-search .searchbox input{font-size:13px}.quick-search-hint{font-size:10px}}
 @media print{.quick-search{display:none!important}}
+
+/* Searching is a list-first mode: no cover, introduction or duplicate headings. */
+body.search-mode #homeView { display: none !important; }
+body.search-mode .quick-search { margin-bottom: 12px; }
+body.search-mode #browseView { margin-top: 0; }
+body.search-mode #browseView .browse-heading,
+body.search-mode #browseView #introPanel { display: none !important; }
+body.search-mode #browseView .list-toolbar { padding: 5px 1px 12px; }
+@media (max-width: 650px) {
+  body.search-mode .quick-search { margin-bottom: 8px; }
+  body.search-mode #browseView .list-toolbar { padding: 4px 1px 9px; }
+}
