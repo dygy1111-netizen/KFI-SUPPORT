@@ -27,10 +27,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify standalone reader source
+        run: |
+          node --check scripts/export-casebook-static.mjs
+          node --check static-casebook/reader.js
+      - name: Export approved cases and photos as static files
+        run: node scripts/export-casebook-static.mjs
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Validate standalone snapshot and create offline ZIP
+        run: |
+          node --check dist/casebook/reader.js
+          node --check dist/casebook/data.js
+          node --input-type=module -e "import fs from 'node:fs';globalThis.window={};await import('./dist/casebook/data.js');const d=window.KFI_STATIC_CASEBOOK;if(!d||!d.cases.length)throw Error('Missing static cases');for(const c of d.cases)for(const p of c.photos||[])if(!fs.existsSync('dist/casebook/'+p.src))throw Error('Missing photo: '+p.src);console.log('Validated',d.cases.length,'cases and local photos');"
+          cd dist/casebook
+          zip -qr casebook-offline.zip index.html style.css reader.js data.js images
+          unzip -tq casebook-offline.zip
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

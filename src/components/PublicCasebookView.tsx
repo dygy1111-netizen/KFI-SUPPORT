@@ -554,6 +554,10 @@ export function PublicCasebookView({
 
 
       <section className="content-section compact">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",flexWrap:"wrap",marginBottom:"18px",padding:"14px 18px",background:"#eff3f5",border:"1px solid #d8e4eb",borderRadius:"6px"}}>
+          <span style={{fontSize:"13px",color:"#31556c"}}>서버 연결 없이 모바일·PC에서 열람할 수 있는 공개 사례집</span>
+          <a className="secondary-button" href="./casebook/" style={{textDecoration:"none",display:"inline-flex",alignItems:"center",fontWeight:700}}>독립형 웹 사례집 열기 ↗</a>
+        </div>
         {isAdmin && (
           <div className="casebook-admin-banner">
             <div>

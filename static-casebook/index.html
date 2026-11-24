@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17364a">
+  <meta name="description" content="한국소방산업기술원 위험물시설·제품 품질관리 사례집. 서버 연결 없이 공개 사례와 사진을 검색하고 열람합니다.">
+  <title>위험물시설 품질관리 사례집 | 독립형 열람판</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./data.js" defer></script>
+  <script src="./reader.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">본문 바로가기</a>
+  <header class="masthead">
+    <a class="identity" href="#home" aria-label="사례집 처음으로">
+      <span class="identity-mark">KFI</span><span class="identity-text"><strong>위험물시설 품질관리 사례집</strong><small>한국소방산업기술원 · 위험물검사부</small></span>
+    </a>
+    <div class="masthead-right">
+      <span class="offline-label">독립형 정적 열람판</span>
+      <a class="download-link" href="./casebook-offline.zip" download>오프라인 ZIP 저장 <span aria-hidden="true">↓</span></a>
+    </div>
+  </header>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="검사별 목차">
+      <div class="sidebar-head"><span>CASEBOOK / CONTENTS</span><h2>검사별 목차</h2><p id="sidebarCount">공개 사례집</p></div>
+      <nav id="categoryNav" aria-label="검사구분별 이동"></nav>
+      <p class="sidebar-foot">수록 자료는 검사 현장 활용을 위한 참고자료입니다. 실제 적용 법령·기술기준을 확인하시기 바랍니다.</p>
+    </aside>
+    <main id="main" class="main">
+      <section id="homeView" aria-label="사례집 표지 및 개요">
+        <div class="cover">
+          <div class="cover-meta"><span id="coverLabel">위험물 안전관리 기술자료</span><span id="coverYear">2026</span></div>
+          <div class="cover-content"><p class="cover-kicker">KFI · TECHNICAL CASEBOOK</p><h1><span id="coverTitle">위험물시설</span><br><strong id="coverSubtitle">품질관리 사례집</strong></h1><div class="cover-rule"></div><p id="coverDeck">검사 현장의 주요 지적 사례와 개선조치 및 재발 방지대책</p></div>
+          <div class="cover-bottom"><div><strong id="coverOrganization">한국소방산업기술원</strong><span id="coverDepartment">위험물검사부</span></div><span id="coverStamp">공개 사례</span></div>
+        </div>
+        <div class="overview">
+          <div class="section-eyebrow">01 / INTRODUCTION</div>
+          <div class="overview-heading"><div><h2 id="overviewTitle">검사업무 개요</h2><p id="overviewLead"></p></div><span class="count-mark" id="totalMark"></span></div>
+          <p id="overviewPurpose" class="overview-purpose"></p>
+          <div class="systems" id="systems"></div>
+          <div class="overview-foot" id="overviewNote"></div>
+        </div>
+      </section>
+      <section class="browse" aria-label="사례 검색 및 목록" id="browseView">
+        <div class="browse-heading"><div><div class="section-eyebrow">02 / CASE LIBRARY</div><h2 id="browseHeading">전체 사례</h2><p id="browseCount">검사구분별로 사례를 탐색할 수 있습니다.</p></div><button id="clearFilter" type="button" class="text-button">전체 보기</button></div>
+        <div id="introPanel" class="intro-panel" hidden></div>
+        <label class="searchbox"><span aria-hidden="true">⌕</span><span class="sr-only">사례 검색</span><input id="searchInput" type="search" placeholder="사례 제목 · 검사기준 · 개선조치 검색" autocomplete="off"><kbd>검색</kbd></label>
+        <div class="list-toolbar"><span id="resultCount">사례 목록</span><span id="snapshotLabel"></span></div>
+        <div id="caseList" class="case-list"></div>
+        <div id="emptyMessage" class="empty" hidden>검색 결과가 없습니다. 다른 검색어를 입력하거나 검사구분을 변경해 주세요.</div>
+      </section>
+      <section id="detailView" class="detail-view" hidden aria-label="선택한 사례 상세">
+        <div class="detail-tools"><button id="backButton" class="text-button" type="button">← 목록으로</button><div><button id="copyLink" type="button">링크 복사</button><button id="printButton" type="button" class="primary-button">이 사례 인쇄</button></div></div>
+        <article id="casePaper" class="case-paper"></article>
+        <p class="detail-caption">본 자료는 참고용 사례이며, 실제 검사 시 적용 법령 및 기술기준을 별도로 확인해야 합니다.</p>
+      </section>
+      <footer class="site-footer"><strong>한국소방산업기술원 · 위험물검사부</strong><span id="footerInfo">독립형 품질관리 사례집</span></footer>
+    </main>
+  </div>
+  <div id="photoModal" class="photo-modal" role="dialog" aria-modal="true" aria-label="현장 사진 확대" hidden><button type="button" id="closePhoto" aria-label="사진 닫기">닫기 ×</button><img id="modalImage" alt="선택한 현장 사진 확대"></div>
+  <noscript><p class="no-js">사례집 열람에는 브라우저의 JavaScript 기능이 필요합니다. 인터넷 서버 연결은 필요하지 않습니다.</p></noscript>
+</body>
+</html>
